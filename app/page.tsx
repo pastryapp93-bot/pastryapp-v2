@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { loginUser } from '@/lib/supabase'
 import { D, ROLE_COLORS, ROLE_LABELS } from '@/lib/design'
 import type { User } from '@/lib/supabase'
+import DirectionApp from '@/app/roles/direction'
 
 // ═══════════════════════════════════════════════
 // PAGE PRINCIPALE — Routage par rôle
@@ -74,7 +75,10 @@ export default function Home() {
       {!splash && !user && (
         <LoginPage onLogin={handleLogin} />
       )}
-      {!splash && user && (
+      {!splash && user && user.role === 'gerant' && (
+        <DirectionApp user={user} onLogout={handleLogout} showToast={showToast} />
+      )}
+      {!splash && user && user.role !== 'gerant' && (
         <WelcomeScreen user={user} onLogout={handleLogout} />
       )}
     </div>
