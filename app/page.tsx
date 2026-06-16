@@ -6,6 +6,7 @@ import type { User } from '@/lib/supabase'
 import DirectionApp from '@/app/roles/direction'
 import PatissierApp from '@/app/roles/patissier'
 import BoulangerApp from '@/app/roles/boulanger'
+import BoutiqueApp from '@/app/roles/boutique'
 
 // ═══════════════════════════════════════════════
 // PAGE PRINCIPALE — Routage par rôle
@@ -86,7 +87,10 @@ export default function Home() {
       {!splash && user && ['boulanger_livry','boulanger_villemomble'].includes(user.role) && (
         <BoulangerApp user={user} onLogout={handleLogout} showToast={showToast} />
       )}
-      {!splash && user && !['gerant','patissier','boulanger_livry','boulanger_villemomble'].includes(user.role) && (
+      {!splash && user && ['boutique_livry','boutique_villemomble'].includes(user.role) && (
+        <BoutiqueApp user={user} onLogout={handleLogout} showToast={showToast} />
+      )}
+      {!splash && user && !['gerant','patissier','boulanger_livry','boulanger_villemomble','boutique_livry','boutique_villemomble'].includes(user.role) && (
         <WelcomeScreen user={user} onLogout={handleLogout} />
       )}
     </div>
