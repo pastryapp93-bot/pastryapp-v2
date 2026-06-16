@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { D } from '@/lib/design'
 import { AppHeader, BottomNav, Card, Badge, SectionLabel, Loader, Avatar } from '@/app/components/ui'
 import type { User } from '@/lib/supabase'
+import DirectionProduits from './produits'
 
 type ShowToast = (msg: string, type?: string) => void
 
@@ -11,6 +12,7 @@ const NAV = [
   { id: 'accueil',     icon: '🏠', label: 'Accueil' },
   { id: 'commandes',   icon: '📋', label: 'Commandes' },
   { id: 'calendrier',  icon: '📅', label: 'Calendrier' },
+  { id: 'produits',    icon: '🛍️', label: 'Produits' },
   { id: 'clients',     icon: '👥', label: 'Clients' },
   { id: 'facturation', icon: '💶', label: 'Facturation' },
   { id: 'stock',       icon: '📦', label: 'Stock' },
@@ -116,6 +118,7 @@ export default function DirectionApp({ user, onLogout, showToast }: {
         {tab === 'accueil'     && <DirectionAccueil commandes={commandes} stock={stock} valider={validerCommande} />}
         {tab === 'commandes'   && <DirectionCommandes commandes={commandes} clients={clients} valider={validerCommande} refuser={refuserCommande} />}
         {tab === 'calendrier'  && <DirectionCalendrier commandes={commandes} />}
+        {tab === 'produits'    && <DirectionProduits showToast={showToast} clients={clients} />}
         {tab === 'clients'     && <DirectionClients clients={clients} showToast={showToast} load={load} />}
         {tab === 'facturation' && <DirectionFacturation clients={clients} showToast={showToast} />}
         {tab === 'stock'       && <DirectionStock stock={stock} traiter={traiterStock} showToast={showToast} load={load} />}
