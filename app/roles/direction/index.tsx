@@ -449,70 +449,93 @@ function DirectionCalendrier({ commandes }: { commandes: any[] }) {
 function DirectionClients({ clients, showToast, load }: {
   clients: any[], showToast: ShowToast, load: () => void
 }) {
-  const [mode, setMode]   = useState<'list' | 'form'>('list')
-  const [edit, setEdit]   = useState<any>(null)
-  const [form, setForm]   = useState({
-    nom: '', login: '', password: '', role: 'framboise',
-    couleur: '#C17F24', email: '', telephone: '', adresse: '', siret: '',
+  const [mode, setMode] = useState<'list' | 'form'>('list')
+  const [edit, setEdit] = useState<any>(null)
+  const [form, setForm] = useState({
+    nom: '', login: '', password: '', type_acces: 'societe',
+    role: 'framboise', couleur: '#C17F24',
+    email: '', telephone: '', adresse: '', siret: '',
   })
 
-  const ROLES_CLIENT = [
-    { id: 'patissier',             label: 'Pâtissier',             color: '#2D7A47' },
-    { id: 'boulanger_livry',       label: 'Boulanger Livry',       color: '#B85C00' },
-    { id: 'boulanger_villemomble', label: 'Boulanger Villemomble', color: '#B85C00' },
-    { id: 'boutique_livry',        label: 'QG Boutique Livry',     color: '#2557A7' },
-    { id: 'boutique_villemomble',  label: "L'Atelier des Saveurs", color: '#7A4E9F' },
-    { id: 'framboise',             label: 'La Framboise',          color: '#C17F24' },
+  // Type d'accès → role + couleur
+  const TYPE_ACCES = [
+    {
+      id: 'societe',
+      label: 'Société cliente',
+      desc: 'Client externe (ex: La Framboise, traiteur...)',
+      icon: '🏢',
+      role: 'framboise',
+      couleur: '#C17F24',
+    },
+    {
+      id: 'particulier',
+      label: 'Client particulier',
+      desc: 'Particulier qui passe commande',
+      icon: '👤',
+      role: 'framboise',
+      couleur: '#2D7A47',
+    },
+    {
+      id: 'interne',
+      label: 'Interne',
+      desc: 'Boutique ou équipe de production',
+      icon: '🏪',
+      role: 'boutique_livry',
+      couleur: '#2557A7',
+      sousRoles: [
+        { id: 'boutique_livry',        label: 'QG Boutique Livry',     couleur: '#2557A7' },
+        { id: 'boutique_villemomble',  label: "L'Atelier des Saveurs", couleur: '#7A4E9F' },
+        { id: 'patissier',             label: 'Pâtissier',             couleur: '#2D7A47' },
+        { id: 'boulanger_livry',       label: 'Boulanger Livry',       couleur: '#B85C00' },
+        { id: 'boulanger_villemomble', label: 'Boulanger Villemomble', couleur: '#B85C00' },
+      ],
+    },
   ]
+
+  const typeActif = TYPE_ACCES.find(t => {
+    if (t.id === 'interne') return t.sousRoles?.some(s => s.id === form.role)
+    return t.id === form.type_acces
+  }) || TYPE_ACCES[0]
 
   const openForm = (client?: any) => {
     setEdit(client || null)
-    setForm({
-      nom:       client?.nom        || '',
-      login:     client?.login      || '',
-      password:  '',
-      role:      client?.role       || 'framboise',
-      couleur:   client?.couleur    || '#C17F24',
-      email:     client?.email      || '',
-      telephone: client?.telephone  || '',
-      adresse:   client?.adresse    || '',
-      siret:     client?.siret      || '',
-    })
+    if (client) {
+      const isInterne = ['boutique_livry','boutique_villemomble','patissier','boulanger_livry','boulanger_villemomble'].includes(client.role)
+      setForm({
+        nom: client.nom || '', login: client.login || '', password: '',
+        type_acces: isInterne ? 'interne' : 'societe',
+        role: client.role || 'framboise', couleur: client.couleur || '#C17F24',
+        email: client.email || '', telephone: '', adresse: '', siret: '',
+      })
+    } else {
+      setForm({ nom: '', login: '', password: '', type_acces: 'societe', role: 'framboise', couleur: '#C17F24', email: '', telephone: '', adresse: '', siret: '' })
+    }
     setMode('form')
+  }
+
+  const setTypeAcces = (t: typeof TYPE_ACCES[0]) => {
+    const role = t.sousRoles ? t.sousRoles[0].id : t.role
+    const couleur = t.sousRoles ? t.sousRoles[0].couleur : t.couleur
+    setForm(prev => ({ ...prev, type_acces: t.id, role, couleur }))
   }
 
   const save = async () => {
     if (!form.nom || !form.login) { showToast('Nom et identifiant requis', 'err'); return }
     if (!edit && !form.password)  { showToast('Mot de passe requis', 'err'); return }
-
     if (edit) {
-      const update: any = {
+      await supabase.from('users').update({
         nom: form.nom, login: form.login, role: form.role,
         couleur: form.couleur, email: form.email,
-      }
+      }).eq('id', edit.id)
       if (form.password) {
-        // Appel RPC pour hasher le password
         try { await supabase.rpc('changer_password', { p_user_id: edit.id, p_new_password: form.password }) } catch {}
       }
-      await supabase.from('users').update(update).eq('id', edit.id)
       showToast('Compte modifié ✓')
     } else {
-      // Créer via RPC pour hasher le password
-      const { error } = await supabase.rpc('creer_user', {
-        p_login:    form.login,
-        p_password: form.password,
-        p_nom:      form.nom,
-        p_role:     form.role,
-        p_couleur:  form.couleur,
-        p_email:    form.email,
+      await supabase.from('users').insert({
+        nom: form.nom, login: form.login, password_hash: form.password,
+        role: form.role, couleur: form.couleur, email: form.email, actif: true,
       })
-      if (error) {
-        // Fallback direct (sans hash)
-        await supabase.from('users').insert({
-          nom: form.nom, login: form.login, password_hash: form.password,
-          role: form.role, couleur: form.couleur, email: form.email, actif: true,
-        })
-      }
       showToast('Compte créé ✓')
     }
     setMode('list'); load()
@@ -525,22 +548,62 @@ function DirectionClients({ clients, showToast, load }: {
   }
 
   const FIELDS = [
-    { label: 'Nom / Société *',        key: 'nom',       ph: 'Ex: La Framboise SARL',  type: 'text' },
-    { label: 'Identifiant connexion *', key: 'login',     ph: 'Ex: framboise',          type: 'text' },
-    { label: edit ? 'Nouveau mot de passe (laisser vide pour ne pas changer)' : 'Mot de passe *',
-                                        key: 'password',  ph: 'Minimum 4 caractères',   type: 'password' },
-    { label: 'Email',                   key: 'email',     ph: 'contact@societe.fr',     type: 'email' },
-    { label: 'Téléphone',               key: 'telephone', ph: '06 00 00 00 00',         type: 'tel' },
-    { label: 'Adresse',                 key: 'adresse',   ph: '12 rue du Four, 75001 Paris', type: 'text' },
-    { label: 'SIRET',                   key: 'siret',     ph: '000 000 000 00000',      type: 'text' },
+    { label: 'Nom / Société *',   key: 'nom',       ph: 'Ex: La Framboise SARL', type: 'text' },
+    { label: 'Identifiant *',     key: 'login',     ph: 'Ex: framboise',         type: 'text' },
+    { label: edit ? 'Nouveau mot de passe (vide = inchangé)' : 'Mot de passe *',
+                                  key: 'password',  ph: 'Minimum 4 caractères',  type: 'password' },
+    { label: 'Email',             key: 'email',     ph: 'contact@societe.fr',    type: 'email' },
+    { label: 'Téléphone',         key: 'telephone', ph: '06 00 00 00 00',        type: 'tel' },
+    { label: 'Adresse',           key: 'adresse',   ph: '12 rue du Four, 75001', type: 'text' },
+    { label: 'SIRET',             key: 'siret',     ph: '000 000 000 00000',     type: 'text' },
   ]
 
   if (mode === 'form') return (
     <div style={{ padding: 16, paddingBottom: 40 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
         <button onClick={() => setMode('list')} style={{ background: 'transparent', border: 'none', color: D.or, fontSize: 22, cursor: 'pointer' }}>←</button>
-        <div style={{ fontSize: 15, fontWeight: 600, color: D.ardoise }}>{edit ? 'Modifier le compte' : 'Nouveau compte client'}</div>
+        <div style={{ fontSize: 15, fontWeight: 600, color: D.ardoise }}>
+          {edit ? 'Modifier le compte' : 'Nouveau compte'}
+        </div>
       </div>
+
+      {/* Type d'accès */}
+      <div style={{ fontSize: 11, color: D.gris, marginBottom: 8, textTransform: 'uppercase', letterSpacing: .5 }}>Type d'accès</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+        {TYPE_ACCES.map(t => (
+          <button key={t.id} onClick={() => setTypeAcces(t)} style={{
+            padding: '12px 14px', borderRadius: 12, textAlign: 'left', cursor: 'pointer',
+            border: `2px solid ${form.type_acces === t.id || (t.id === 'interne' && t.sousRoles?.some(s => s.id === form.role)) ? D.or : D.craieDark}`,
+            background: form.type_acces === t.id || (t.id === 'interne' && t.sousRoles?.some(s => s.id === form.role)) ? `${D.or}10` : 'white',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 20 }}>{t.icon}</span>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: D.ardoise }}>{t.label}</div>
+                <div style={{ fontSize: 11, color: D.gris, marginTop: 1 }}>{t.desc}</div>
+              </div>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* Sous-rôle si Interne */}
+      {TYPE_ACCES[2].sousRoles?.some(s => s.id === form.role) && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 11, color: D.gris, marginBottom: 8, textTransform: 'uppercase', letterSpacing: .5 }}>Interface attribuée</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {TYPE_ACCES[2].sousRoles?.map(s => (
+              <button key={s.id} onClick={() => setForm(prev => ({ ...prev, role: s.id, couleur: s.couleur }))} style={{
+                padding: '10px 14px', borderRadius: 10, textAlign: 'left', cursor: 'pointer',
+                border: `2px solid ${form.role === s.id ? s.couleur : D.craieDark}`,
+                background: form.role === s.id ? `${s.couleur}12` : 'white',
+                color: form.role === s.id ? s.couleur : D.ardoise,
+                fontSize: 13, fontWeight: form.role === s.id ? 600 : 400,
+              }}>{s.label}</button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Champs */}
       {FIELDS.map(f => (
@@ -557,77 +620,57 @@ function DirectionClients({ clients, showToast, load }: {
         </div>
       ))}
 
-      {/* Rôle */}
-      <div style={{ fontSize: 11, color: D.gris, marginBottom: 8, textTransform: 'uppercase', letterSpacing: .5 }}>Rôle / Type de compte</div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
-        {ROLES_CLIENT.map(r => (
-          <button key={r.id} onClick={() => setForm(prev => ({ ...prev, role: r.id, couleur: r.color }))} style={{
-            padding: '11px 14px', borderRadius: 10, textAlign: 'left', cursor: 'pointer',
-            border: `2px solid ${form.role === r.id ? r.color : D.craieDark}`,
-            background: form.role === r.id ? `${r.color}12` : 'white',
-            color: form.role === r.id ? r.color : D.ardoise,
-            fontSize: 13, fontWeight: form.role === r.id ? 600 : 400,
-          }}>{r.label}</button>
-        ))}
-      </div>
-
       <button onClick={save} className="press" style={{
         width: '100%', padding: 14, background: D.ardoise, color: 'white',
-        border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer',
+        border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600,
+        cursor: 'pointer', marginTop: 8,
       }}>
-        {edit ? 'Enregistrer les modifications ✓' : 'Créer le compte ✓'}
+        {edit ? 'Enregistrer ✓' : 'Créer le compte ✓'}
       </button>
     </div>
   )
 
-  // ── Liste clients ──
+  // ── Liste groupée ──
   const ROLE_LABELS: Record<string, string> = {
     patissier: 'Pâtissier', boulanger_livry: 'Boulanger Livry',
     boulanger_villemomble: 'Boulanger Villemomble',
     boutique_livry: 'QG Boutique Livry', boutique_villemomble: "L'Atelier des Saveurs",
-    framboise: 'La Framboise',
+    framboise: 'Client externe',
   }
-
   const groupes = [
-    { label: 'Équipe production', roles: ['patissier','boulanger_livry','boulanger_villemomble'] },
-    { label: 'Boutiques internes', roles: ['boutique_livry','boutique_villemomble'] },
-    { label: 'Clients externes', roles: ['framboise'] },
+    { label: '🏢 Sociétés & Particuliers', roles: ['framboise'] },
+    { label: '🏪 Boutiques internes',       roles: ['boutique_livry', 'boutique_villemomble'] },
+    { label: '👨‍🍳 Équipe production',        roles: ['patissier', 'boulanger_livry', 'boulanger_villemomble'] },
   ]
 
   return (
     <div style={{ padding: 16 }}>
       <button onClick={() => openForm()} className="press" style={{
-        width: '100%', padding: '12px', background: D.ardoise, color: 'white',
-        border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', marginBottom: 16,
-      }}>+ Nouveau compte client / société</button>
+        width: '100%', padding: 12, background: D.ardoise, color: 'white',
+        border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600,
+        cursor: 'pointer', marginBottom: 16,
+      }}>+ Nouveau compte client</button>
 
       {groupes.map(g => {
-        const groupClients = clients.filter(c => g.roles.includes(c.role))
-        if (groupClients.length === 0) return null
+        const gc = clients.filter(c => g.roles.includes(c.role))
+        if (gc.length === 0) return null
         return (
           <div key={g.label}>
             <SectionLabel>{g.label}</SectionLabel>
-            {groupClients.map((c: any) => (
+            {gc.map((c: any) => (
               <Card key={c.id} borderColor={c.couleur}>
                 <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
                   <Avatar nom={c.nom} couleur={c.couleur} size={42} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: c.couleur }}>{c.nom}</div>
-                    <div style={{ fontSize: 11, color: D.gris, marginTop: 2 }}>
-                      @{c.login} · {ROLE_LABELS[c.role] || c.role}
-                    </div>
+                    <div style={{ fontSize: 11, color: D.gris, marginTop: 2 }}>@{c.login} · {ROLE_LABELS[c.role] || c.role}</div>
                     {c.email && <div style={{ fontSize: 10, color: D.grisClair, marginTop: 1 }}>✉️ {c.email}</div>}
                   </div>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => openForm(c)} style={{
-                      width: 32, height: 32, background: D.craieMid, border: `1px solid ${D.craieDark}`,
-                      borderRadius: 8, cursor: 'pointer', fontSize: 14,
-                    }}>✏️</button>
-                    <button onClick={() => toggleActif(c.id, c.actif)} style={{
-                      width: 32, height: 32, background: c.actif ? D.vertBg : D.rougeBg,
-                      border: 'none', borderRadius: 8, cursor: 'pointer',
-                      fontSize: 12, color: c.actif ? D.vert : D.rouge, fontWeight: 700,
-                    }}>{c.actif ? '✓' : '✕'}</button>
+                    <button onClick={() => openForm(c)} style={{ width: 32, height: 32, background: D.craieMid, border: `1px solid ${D.craieDark}`, borderRadius: 8, cursor: 'pointer', fontSize: 14 }}>✏️</button>
+                    <button onClick={() => toggleActif(c.id, c.actif)} style={{ width: 32, height: 32, background: c.actif ? D.vertBg : D.rougeBg, border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 12, color: c.actif ? D.vert : D.rouge, fontWeight: 700 }}>
+                      {c.actif ? '✓' : '✕'}
+                    </button>
                   </div>
                 </div>
               </Card>
