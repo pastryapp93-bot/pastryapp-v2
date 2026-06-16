@@ -261,10 +261,16 @@ export default function DirectionProduits({ showToast, clients }: {
 
           {/* Familles vides — invitation à ajouter */}
           {filteredFamilles.every(f => produits.filter(p => p.famille_id === f.id).length === 0) && (
-            <div style={{ padding: 40, textAlign: 'center', color: D.gris }}>
+            <div style={{ padding: 32, textAlign: 'center', color: D.gris }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>📦</div>
-              <div style={{ fontSize: 14 }}>Aucun produit dans ce catalogue</div>
-              <div style={{ fontSize: 12, marginTop: 6, color: D.grisClair }}>Clique sur "+ Ajouter" pour commencer</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: D.ardoise, marginBottom: 8 }}>Catalogue vide</div>
+              <div style={{ fontSize: 12, color: D.gris, marginBottom: 16, lineHeight: 1.6 }}>
+                Le catalogue est vide. Exécute le fichier <strong>produits_patisserie.sql</strong> dans Supabase SQL Editor,
+                ou clique ci-dessous pour créer un produit manuellement.
+              </div>
+              <button onClick={openForm} className="press" style={{ padding: '10px 20px', background: D.ardoise, color: 'white', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                + Ajouter un premier produit
+              </button>
             </div>
           )}
         </div>
