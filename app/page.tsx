@@ -75,7 +75,7 @@ export default function Home() {
         <LoginPage onLogin={handleLogin} />
       )}
       {!splash && user && (
-        <div>Direction: {user.nom}</div>
+        <WelcomeScreen user={user} onLogout={handleLogout} />
       )}
     </div>
   )
@@ -260,4 +260,65 @@ const inputStyle: React.CSSProperties = {
   color: D.ardoise,
   outline: 'none',
   marginBottom: 10,
+}
+
+
+// ═══════════════════════════════════════════════
+// ÉCRAN D'ACCUEIL TEMPORAIRE (en attendant les interfaces)
+// ═══════════════════════════════════════════════
+function WelcomeScreen({ user, onLogout }: { user: User, onLogout: () => void }) {
+  const color = user.couleur || D.or
+  const initiales = user.nom.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: D.craie }}>
+      {/* Header */}
+      <div style={{
+        background: 'white', borderBottom: `1.5px solid ${D.craieDark}`,
+        padding: '12px 16px', display: 'flex', alignItems: 'center',
+        justifyContent: 'space-between',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: 10,
+            background: `${color}18`, border: `1.5px solid ${color}40`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 13, fontWeight: 700, color,
+          }}>
+            {initiales}
+          </div>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: D.ardoise }}>{user.nom}</div>
+            <div style={{ fontSize: 10, color: D.grisClair, textTransform: 'capitalize' }}>{user.role}</div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span className="serif-i" style={{ fontSize: 15, color: D.or }}>PastryApp</span>
+          <button onClick={onLogout} style={{
+            background: 'transparent', border: `1px solid ${D.craieDark}`,
+            color: D.gris, borderRadius: 8, padding: '4px 10px',
+            fontSize: 11, cursor: 'pointer',
+          }}>Déco.</button>
+        </div>
+      </div>
+
+      {/* Corps */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <img src="/logo.png" alt="" style={{ width: 80, height: 80, objectFit: 'contain', marginBottom: 20 }} />
+        <div className="serif" style={{ fontSize: 28, fontWeight: 300, color: D.ardoise, marginBottom: 8, textAlign: 'center' }}>
+          Bonjour, {user.nom.split(' ')[0]} !
+        </div>
+        <div style={{ fontSize: 13, color: D.gris, textAlign: 'center', marginBottom: 32 }}>
+          Connexion réussie ✓
+        </div>
+        <div style={{
+          background: D.vertBg, border: `1px solid ${D.vert}30`,
+          borderRadius: 12, padding: '14px 20px', textAlign: 'center',
+        }}>
+          <div style={{ fontSize: 12, color: D.vert, fontWeight: 600 }}>✅ Base de données connectée</div>
+          <div style={{ fontSize: 11, color: D.gris, marginTop: 4 }}>Rôle : {user.role}</div>
+        </div>
+      </div>
+    </div>
+  )
 }
