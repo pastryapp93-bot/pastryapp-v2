@@ -1,65 +1,263 @@
-import Image from "next/image";
+'use client'
+import { useState, useEffect, useCallback } from 'react'
+import { loginUser } from '@/lib/supabase'
+import { D, ROLE_COLORS, ROLE_LABELS } from '@/lib/design'
+import type { User } from '@/lib/supabase'
 
+// ═══════════════════════════════════════════════
+// PAGE PRINCIPALE — Routage par rôle
+// ═══════════════════════════════════════════════
 export default function Home() {
+  const [user, setUser]       = useState<User | null>(null)
+  const [splash, setSplash]   = useState(true)
+  const [mounted, setMounted] = useState(false)
+  const [toast, setToast]     = useState<{msg: string, type: string} | null>(null)
+
+  const showToast = useCallback((msg: string, type = 'ok') => {
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 3000)
+  }, [])
+
+  useEffect(() => {
+    setMounted(true)
+    // Restaurer session
+    try {
+      const saved = localStorage.getItem('pastryapp_v2_user')
+      if (saved) setUser(JSON.parse(saved))
+    } catch {}
+    // Splash screen 3 secondes
+    const t = setTimeout(() => setSplash(false), 3000)
+    return () => clearTimeout(t)
+  }, [])
+
+  const handleLogin = (u: User) => {
+    setUser(u)
+    try { localStorage.setItem('pastryapp_v2_user', JSON.stringify(u)) } catch {}
+  }
+
+  const handleLogout = () => {
+    setUser(null)
+    try { localStorage.removeItem('pastryapp_v2_user') } catch {}
+  }
+
+  if (!mounted) return null
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div style={{
+      background: D.craie,
+      minHeight: '100vh',
+      maxWidth: 480,
+      margin: '0 auto',
+      display: 'flex',
+      flexDirection: 'column',
+      position: 'relative',
+    }}>
+
+      {/* Toast */}
+      {toast && (
+        <div style={{
+          position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 9999, background: toast.type === 'err' ? D.rouge : D.ardoise,
+          color: 'white', borderRadius: 20, padding: '10px 20px',
+          fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap',
+          boxShadow: '0 4px 20px rgba(0,0,0,.15)',
+          animation: 'slideUp .2s ease',
+        }}>
+          {toast.type === 'ok' ? '✓ ' : '⚠ '}{toast.msg}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      )}
+
+      {/* Splash Screen */}
+      {splash && <SplashScreen />}
+
+      {/* App */}
+      {!splash && !user && (
+        <LoginPage onLogin={handleLogin} />
+      )}
+      {!splash && user && (
+        <div>Direction: {user.nom}</div>
+      )}
     </div>
-  );
+  )
+}
+
+// ═══════════════════════════════════════════════
+// SPLASH SCREEN
+// ═══════════════════════════════════════════════
+function SplashScreen() {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: D.craie,
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      zIndex: 1000, gap: 12,
+    }}>
+      <img
+        src="/logo.png"
+        alt="PastryApp"
+        style={{
+          width: 160, height: 160, objectFit: 'contain',
+          animation: 'splashLogo 3s ease forwards',
+        }}
+      />
+      <div className="serif" style={{
+        fontSize: 36, fontWeight: 300, color: D.ardoise,
+        letterSpacing: '-1px', lineHeight: 1,
+        animation: 'splashText 3s ease .2s forwards',
+      }}>
+        PastryApp
+      </div>
+      <div className="serif-i" style={{
+        fontSize: 17, color: D.or,
+        animation: 'splashText 3s ease .3s forwards',
+      }}>
+        Aux Mille Saveurs
+      </div>
+      <div style={{
+        height: 2, background: D.or, borderRadius: 1,
+        animation: 'splashLine 3s ease .4s forwards',
+      }} />
+      <div style={{
+        fontSize: 10, color: D.grisClair,
+        letterSpacing: '2px', textTransform: 'uppercase',
+        animation: 'splashText 3s ease .5s forwards',
+      }}>
+        Gestion · Boulangerie · Pâtisserie
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════
+// PAGE DE CONNEXION
+// ═══════════════════════════════════════════════
+function LoginPage({ onLogin }: { onLogin: (u: User) => void }) {
+  const [login, setLogin]     = useState('')
+  const [pwd, setPwd]         = useState('')
+  const [err, setErr]         = useState('')
+  const [loading, setLoading] = useState(false)
+  const [showPwd, setShowPwd] = useState(false)
+
+  const handle = async () => {
+    if (!login || !pwd) { setErr('Remplis tous les champs'); return }
+    setErr(''); setLoading(true)
+    const user = await loginUser(login.trim(), pwd)
+    setLoading(false)
+    if (user) onLogin(user)
+    else setErr('Identifiant ou mot de passe incorrect')
+  }
+
+  return (
+    <div style={{
+      minHeight: '100vh', display: 'flex',
+      flexDirection: 'column', padding: '0 24px',
+      background: D.craie,
+    }}>
+      {/* Logo + titre */}
+      <div style={{
+        flex: 1, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        paddingTop: 48, paddingBottom: 24,
+      }}>
+        <img src="/logo.png" alt="PastryApp"
+          style={{ width: 140, height: 140, objectFit: 'contain', marginBottom: 16 }}
+        />
+        <div className="serif" style={{
+          fontSize: 36, fontWeight: 300, color: D.ardoise,
+          letterSpacing: '-1px', textAlign: 'center', lineHeight: 1,
+        }}>
+          PastryApp
+        </div>
+        <div style={{ fontSize: 12, color: D.grisClair, marginTop: 8 }}>
+          by <span className="serif-i" style={{ fontSize: 16, color: D.or }}>Aux Mille Saveurs</span>
+        </div>
+        <div style={{ fontSize: 10, color: D.grisClair, letterSpacing: '2px', textTransform: 'uppercase', marginTop: 4, marginBottom: 32 }}>
+          Gestion · Boulangerie · Pâtisserie
+        </div>
+
+        {/* Séparateur */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28, width: '100%' }}>
+          <div style={{ flex: 1, height: 1, background: D.craieDark }} />
+          <div style={{ width: 5, height: 5, borderRadius: '50%', background: D.or }} />
+          <div style={{ flex: 1, height: 1, background: D.craieDark }} />
+        </div>
+
+        {/* Formulaire */}
+        <div style={{ width: '100%' }}>
+          <input
+            value={login}
+            onChange={e => setLogin(e.target.value)}
+            placeholder="Identifiant"
+            autoCapitalize="none"
+            style={inputStyle}
+          />
+          <div style={{ position: 'relative', marginBottom: 4 }}>
+            <input
+              type={showPwd ? 'text' : 'password'}
+              value={pwd}
+              onChange={e => setPwd(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handle()}
+              placeholder="Mot de passe"
+              style={{ ...inputStyle, marginBottom: 0, paddingRight: 44 }}
+            />
+            <button
+              onClick={() => setShowPwd(!showPwd)}
+              style={{
+                position: 'absolute', right: 12, top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'none', border: 'none',
+                color: D.gris, cursor: 'pointer', fontSize: 16,
+              }}>
+              {showPwd ? '🙈' : '👁️'}
+            </button>
+          </div>
+
+          {err && (
+            <div style={{
+              color: D.rouge, fontSize: 12, margin: '8px 0',
+              padding: '8px 12px', background: D.rougeBg,
+              borderRadius: 8, textAlign: 'center',
+            }}>
+              {err}
+            </div>
+          )}
+
+          <button
+            onClick={handle}
+            disabled={loading}
+            className="press"
+            style={{
+              width: '100%', padding: '15px 20px',
+              background: loading ? D.gris : D.ardoise,
+              color: 'white', border: 'none',
+              borderRadius: 14, fontSize: 15, fontWeight: 600,
+              cursor: loading ? 'not-allowed' : 'pointer',
+              marginTop: 12,
+            }}>
+            {loading ? 'Connexion...' : 'Se connecter'}
+          </button>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div style={{ paddingBottom: 28, textAlign: 'center' }}>
+        <div style={{ fontSize: 10, color: D.grisClair, letterSpacing: '2px', textTransform: 'uppercase' }}>
+          🔒 Connexion sécurisée
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Styles communs ───────────────────────────
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '13px 16px',
+  background: 'white',
+  border: `1.5px solid ${D.craieDark}`,
+  borderRadius: 12,
+  fontSize: 14,
+  color: D.ardoise,
+  outline: 'none',
+  marginBottom: 10,
 }
