@@ -7,6 +7,7 @@ import DirectionApp from '@/app/roles/direction'
 import PatissierApp from '@/app/roles/patissier'
 import BoulangerApp from '@/app/roles/boulanger'
 import BoutiqueApp from '@/app/roles/boutique'
+import FramboiseApp from '@/app/roles/framboise'
 
 // ═══════════════════════════════════════════════
 // PAGE PRINCIPALE — Routage par rôle
@@ -90,7 +91,10 @@ export default function Home() {
       {!splash && user && ['boutique_livry','boutique_villemomble'].includes(user.role) && (
         <BoutiqueApp user={user} onLogout={handleLogout} showToast={showToast} />
       )}
-      {!splash && user && !['gerant','patissier','boulanger_livry','boulanger_villemomble','boutique_livry','boutique_villemomble'].includes(user.role) && (
+      {!splash && user && user.role === 'framboise' && (
+        <FramboiseApp user={user} onLogout={handleLogout} showToast={showToast} />
+      )}
+      {!splash && user && !['gerant','patissier','boulanger_livry','boulanger_villemomble','boutique_livry','boutique_villemomble','framboise'].includes(user.role) && (
         <WelcomeScreen user={user} onLogout={handleLogout} />
       )}
     </div>
