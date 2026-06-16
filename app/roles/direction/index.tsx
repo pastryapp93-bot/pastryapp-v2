@@ -451,33 +451,69 @@ function DirectionClients({ clients, showToast, load }: {
 }) {
   const [mode, setMode]   = useState<'list' | 'form'>('list')
   const [edit, setEdit]   = useState<any>(null)
-  const [form, setForm]   = useState({ nom: '', login: '', role: 'boutique_livry', couleur: '#2557A7', email: '' })
+  const [form, setForm]   = useState({
+    nom: '', login: '', password: '', role: 'framboise',
+    couleur: '#C17F24', email: '', telephone: '', adresse: '', siret: '',
+  })
 
   const ROLES_CLIENT = [
-    { id: 'patissier',             label: 'Pâtissier',           color: '#2D7A47' },
-    { id: 'boulanger_livry',       label: 'Boulanger Livry',     color: '#B85C00' },
+    { id: 'patissier',             label: 'Pâtissier',             color: '#2D7A47' },
+    { id: 'boulanger_livry',       label: 'Boulanger Livry',       color: '#B85C00' },
     { id: 'boulanger_villemomble', label: 'Boulanger Villemomble', color: '#B85C00' },
-    { id: 'boutique_livry',        label: 'QG Boutique Livry',   color: '#2557A7' },
+    { id: 'boutique_livry',        label: 'QG Boutique Livry',     color: '#2557A7' },
     { id: 'boutique_villemomble',  label: "L'Atelier des Saveurs", color: '#7A4E9F' },
-    { id: 'framboise',             label: 'La Framboise',        color: '#C17F24' },
+    { id: 'framboise',             label: 'La Framboise',          color: '#C17F24' },
   ]
 
   const openForm = (client?: any) => {
-    if (client) {
-      setEdit(client)
-      setForm({ nom: client.nom, login: client.login, role: client.role, couleur: client.couleur || '#2557A7', email: client.email || '' })
-    } else {
-      setEdit(null)
-      setForm({ nom: '', login: '', role: 'boutique_livry', couleur: '#2557A7', email: '' })
-    }
+    setEdit(client || null)
+    setForm({
+      nom:       client?.nom        || '',
+      login:     client?.login      || '',
+      password:  '',
+      role:      client?.role       || 'framboise',
+      couleur:   client?.couleur    || '#C17F24',
+      email:     client?.email      || '',
+      telephone: client?.telephone  || '',
+      adresse:   client?.adresse    || '',
+      siret:     client?.siret      || '',
+    })
     setMode('form')
   }
 
   const save = async () => {
     if (!form.nom || !form.login) { showToast('Nom et identifiant requis', 'err'); return }
+    if (!edit && !form.password)  { showToast('Mot de passe requis', 'err'); return }
+
     if (edit) {
-      await supabase.from('users').update({ nom: form.nom, login: form.login, role: form.role, couleur: form.couleur, email: form.email }).eq('id', edit.id)
-      showToast('Modifié ✓')
+      const update: any = {
+        nom: form.nom, login: form.login, role: form.role,
+        couleur: form.couleur, email: form.email,
+      }
+      if (form.password) {
+        // Appel RPC pour hasher le password
+        try { await supabase.rpc('changer_password', { p_user_id: edit.id, p_new_password: form.password }) } catch {}
+      }
+      await supabase.from('users').update(update).eq('id', edit.id)
+      showToast('Compte modifié ✓')
+    } else {
+      // Créer via RPC pour hasher le password
+      const { error } = await supabase.rpc('creer_user', {
+        p_login:    form.login,
+        p_password: form.password,
+        p_nom:      form.nom,
+        p_role:     form.role,
+        p_couleur:  form.couleur,
+        p_email:    form.email,
+      })
+      if (error) {
+        // Fallback direct (sans hash)
+        await supabase.from('users').insert({
+          nom: form.nom, login: form.login, password_hash: form.password,
+          role: form.role, couleur: form.couleur, email: form.email, actif: true,
+        })
+      }
+      showToast('Compte créé ✓')
     }
     setMode('list'); load()
   }
@@ -488,77 +524,117 @@ function DirectionClients({ clients, showToast, load }: {
     load()
   }
 
+  const FIELDS = [
+    { label: 'Nom / Société *',        key: 'nom',       ph: 'Ex: La Framboise SARL',  type: 'text' },
+    { label: 'Identifiant connexion *', key: 'login',     ph: 'Ex: framboise',          type: 'text' },
+    { label: edit ? 'Nouveau mot de passe (laisser vide pour ne pas changer)' : 'Mot de passe *',
+                                        key: 'password',  ph: 'Minimum 4 caractères',   type: 'password' },
+    { label: 'Email',                   key: 'email',     ph: 'contact@societe.fr',     type: 'email' },
+    { label: 'Téléphone',               key: 'telephone', ph: '06 00 00 00 00',         type: 'tel' },
+    { label: 'Adresse',                 key: 'adresse',   ph: '12 rue du Four, 75001 Paris', type: 'text' },
+    { label: 'SIRET',                   key: 'siret',     ph: '000 000 000 00000',      type: 'text' },
+  ]
+
   if (mode === 'form') return (
-    <div style={{ padding: 16 }}>
+    <div style={{ padding: 16, paddingBottom: 40 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
         <button onClick={() => setMode('list')} style={{ background: 'transparent', border: 'none', color: D.or, fontSize: 22, cursor: 'pointer' }}>←</button>
-        <div style={{ fontSize: 15, fontWeight: 600, color: D.ardoise }}>{edit ? 'Modifier le compte' : 'Nouveau compte'}</div>
+        <div style={{ fontSize: 15, fontWeight: 600, color: D.ardoise }}>{edit ? 'Modifier le compte' : 'Nouveau compte client'}</div>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {[{ label: 'Nom', key: 'nom', placeholder: 'Ex: La Framboise' },
-          { label: 'Identifiant de connexion', key: 'login', placeholder: 'Ex: framboise' },
-          { label: 'Email', key: 'email', placeholder: 'contact@example.com' }
-        ].map(f => (
-          <div key={f.key}>
-            <div style={{ fontSize: 11, color: D.gris, marginBottom: 4, textTransform: 'uppercase', letterSpacing: .5 }}>{f.label}</div>
-            <input value={(form as any)[f.key]} onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
-              placeholder={f.placeholder} style={inputStyle} />
-          </div>
-        ))}
-        <div>
-          <div style={{ fontSize: 11, color: D.gris, marginBottom: 6, textTransform: 'uppercase', letterSpacing: .5 }}>Rôle</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {ROLES_CLIENT.map(r => (
-              <button key={r.id} onClick={() => setForm(prev => ({ ...prev, role: r.id, couleur: r.color }))} style={{
-                padding: '10px 14px', borderRadius: 10, textAlign: 'left', cursor: 'pointer',
-                border: `2px solid ${form.role === r.id ? r.color : D.craieDark}`,
-                background: form.role === r.id ? `${r.color}12` : 'white',
-                color: form.role === r.id ? r.color : D.ardoise, fontSize: 13, fontWeight: form.role === r.id ? 600 : 400,
-              }}>{r.label}</button>
-            ))}
-          </div>
+
+      {/* Champs */}
+      {FIELDS.map(f => (
+        <div key={f.key} style={{ marginBottom: 8 }}>
+          <div style={{ fontSize: 11, color: D.gris, marginBottom: 4, textTransform: 'uppercase', letterSpacing: .5 }}>{f.label}</div>
+          <input
+            type={f.type}
+            value={(form as any)[f.key]}
+            onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
+            placeholder={f.ph}
+            autoCapitalize="none"
+            style={inputStyle}
+          />
         </div>
-        <button onClick={save} className="press" style={{
-          width: '100%', padding: 14, background: D.ardoise, color: 'white',
-          border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', marginTop: 8,
-        }}>
-          {edit ? 'Enregistrer ✓' : 'Créer le compte ✓'}
-        </button>
+      ))}
+
+      {/* Rôle */}
+      <div style={{ fontSize: 11, color: D.gris, marginBottom: 8, textTransform: 'uppercase', letterSpacing: .5 }}>Rôle / Type de compte</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
+        {ROLES_CLIENT.map(r => (
+          <button key={r.id} onClick={() => setForm(prev => ({ ...prev, role: r.id, couleur: r.color }))} style={{
+            padding: '11px 14px', borderRadius: 10, textAlign: 'left', cursor: 'pointer',
+            border: `2px solid ${form.role === r.id ? r.color : D.craieDark}`,
+            background: form.role === r.id ? `${r.color}12` : 'white',
+            color: form.role === r.id ? r.color : D.ardoise,
+            fontSize: 13, fontWeight: form.role === r.id ? 600 : 400,
+          }}>{r.label}</button>
+        ))}
       </div>
+
+      <button onClick={save} className="press" style={{
+        width: '100%', padding: 14, background: D.ardoise, color: 'white',
+        border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer',
+      }}>
+        {edit ? 'Enregistrer les modifications ✓' : 'Créer le compte ✓'}
+      </button>
     </div>
   )
 
+  // ── Liste clients ──
+  const ROLE_LABELS: Record<string, string> = {
+    patissier: 'Pâtissier', boulanger_livry: 'Boulanger Livry',
+    boulanger_villemomble: 'Boulanger Villemomble',
+    boutique_livry: 'QG Boutique Livry', boutique_villemomble: "L'Atelier des Saveurs",
+    framboise: 'La Framboise',
+  }
+
+  const groupes = [
+    { label: 'Équipe production', roles: ['patissier','boulanger_livry','boulanger_villemomble'] },
+    { label: 'Boutiques internes', roles: ['boutique_livry','boutique_villemomble'] },
+    { label: 'Clients externes', roles: ['framboise'] },
+  ]
+
   return (
     <div style={{ padding: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-        <div style={{ fontSize: 13, color: D.gris }}>{clients.length} compte{clients.length > 1 ? 's' : ''}</div>
-        <button onClick={() => openForm()} className="press" style={{
-          padding: '9px 16px', background: D.ardoise, color: 'white',
-          border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-        }}>+ Nouveau</button>
-      </div>
-      {clients.map((c: any) => (
-        <Card key={c.id} borderColor={c.couleur}>
-          <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Avatar nom={c.nom} couleur={c.couleur} size={42} />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: c.couleur }}>{c.nom}</div>
-              <div style={{ fontSize: 11, color: D.gris, marginTop: 2 }}>@{c.login} · {c.role}</div>
-            </div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button onClick={() => openForm(c)} style={{
-                width: 30, height: 30, background: D.craieMid, border: `1px solid ${D.craieDark}`,
-                borderRadius: 8, cursor: 'pointer', fontSize: 13,
-              }}>✏️</button>
-              <button onClick={() => toggleActif(c.id, c.actif)} style={{
-                width: 30, height: 30, background: c.actif ? D.vertBg : D.rougeBg,
-                border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 11,
-                color: c.actif ? D.vert : D.rouge, fontWeight: 600,
-              }}>{c.actif ? '✓' : '✕'}</button>
-            </div>
+      <button onClick={() => openForm()} className="press" style={{
+        width: '100%', padding: '12px', background: D.ardoise, color: 'white',
+        border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', marginBottom: 16,
+      }}>+ Nouveau compte client / société</button>
+
+      {groupes.map(g => {
+        const groupClients = clients.filter(c => g.roles.includes(c.role))
+        if (groupClients.length === 0) return null
+        return (
+          <div key={g.label}>
+            <SectionLabel>{g.label}</SectionLabel>
+            {groupClients.map((c: any) => (
+              <Card key={c.id} borderColor={c.couleur}>
+                <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Avatar nom={c.nom} couleur={c.couleur} size={42} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: c.couleur }}>{c.nom}</div>
+                    <div style={{ fontSize: 11, color: D.gris, marginTop: 2 }}>
+                      @{c.login} · {ROLE_LABELS[c.role] || c.role}
+                    </div>
+                    {c.email && <div style={{ fontSize: 10, color: D.grisClair, marginTop: 1 }}>✉️ {c.email}</div>}
+                  </div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={() => openForm(c)} style={{
+                      width: 32, height: 32, background: D.craieMid, border: `1px solid ${D.craieDark}`,
+                      borderRadius: 8, cursor: 'pointer', fontSize: 14,
+                    }}>✏️</button>
+                    <button onClick={() => toggleActif(c.id, c.actif)} style={{
+                      width: 32, height: 32, background: c.actif ? D.vertBg : D.rougeBg,
+                      border: 'none', borderRadius: 8, cursor: 'pointer',
+                      fontSize: 12, color: c.actif ? D.vert : D.rouge, fontWeight: 700,
+                    }}>{c.actif ? '✓' : '✕'}</button>
+                  </div>
+                </div>
+              </Card>
+            ))}
           </div>
-        </Card>
-      ))}
+        )
+      })}
     </div>
   )
 }
@@ -793,15 +869,35 @@ function DirectionStock({ stock, traiter, showToast, load }: {
           }}>{r.ic} {r.l}</button>
         ))}
       </div>
-      {[{ label: 'Nom *', val: fNom, set: setFNom, ph: 'Ex: Beurre tourage' },
-        { label: 'Catégorie *', val: fCat, set: setFCat, ph: 'Ex: Matières grasses' },
-        { label: 'Fournisseur', val: fFourn, set: setFFourn, ph: 'Ex: Frisson' },
-      ].map(f => (
-        <div key={f.label}>
-          <div style={{ fontSize: 11, color: D.gris, marginBottom: 4, textTransform: 'uppercase', letterSpacing: .5 }}>{f.label}</div>
-          <input value={f.val} onChange={e => f.set(e.target.value)} placeholder={f.ph} style={inputStyle} />
+      <div>
+        <div style={{ fontSize: 11, color: D.gris, marginBottom: 4, textTransform: 'uppercase', letterSpacing: .5 }}>Nom *</div>
+        <input value={fNom} onChange={e => setFNom(e.target.value)} placeholder="Ex: Beurre tourage" style={inputStyle} />
+      </div>
+      <div>
+        <div style={{ fontSize: 11, color: D.gris, marginBottom: 4, textTransform: 'uppercase', letterSpacing: .5 }}>Catégorie *</div>
+        {/* Catégories prédéfinies selon le profil */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+          {(fRole === 'patissier'
+            ? ['Matières grasses','Laitiers','Chocolats','Sucres','Farines','Fruits secs','Purées & Fruits','Gélifiants','Emballages','Divers']
+            : fRole === 'boulanger'
+            ? ['Farines & Mix','Graines','Garnitures','Emballages','Divers']
+            : ['Emballages','Divers']
+          ).map(cat => (
+            <button key={cat} onClick={() => setFCat(cat)} style={{
+              padding: '6px 12px', borderRadius: 20, fontSize: 11, fontWeight: 500,
+              background: fCat === cat ? D.or : D.craieMid,
+              color: fCat === cat ? 'white' : D.gris,
+              border: `1px solid ${fCat === cat ? D.or : D.craieDark}`,
+              cursor: 'pointer',
+            }}>{cat}</button>
+          ))}
         </div>
-      ))}
+        <input value={fCat} onChange={e => setFCat(e.target.value)} placeholder="Ou saisir une nouvelle catégorie..." style={{ ...inputStyle, marginTop: 4 }} />
+      </div>
+      <div>
+        <div style={{ fontSize: 11, color: D.gris, marginBottom: 4, textTransform: 'uppercase', letterSpacing: .5 }}>Fournisseur</div>
+        <input value={fFourn} onChange={e => setFFourn(e.target.value)} placeholder="Ex: Frisson" style={inputStyle} />
+      </div>
       <div style={{ fontSize: 11, color: D.gris, marginBottom: 4, textTransform: 'uppercase', letterSpacing: .5 }}>Unité</div>
       <select value={fUnite} onChange={e => setFUnite(e.target.value)} style={inputStyle}>
         {['kg', 'g', 'L', 'ml', 'unité', 'lot', 'sac', 'seau', 'boîte'].map(u => <option key={u} value={u}>{u}</option>)}
