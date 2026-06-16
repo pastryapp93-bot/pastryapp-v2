@@ -306,7 +306,7 @@ function WelcomeScreen({ user, onLogout }: { user: User, onLogout: () => void })
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
         <img src="/logo.png" alt="" style={{ width: 80, height: 80, objectFit: 'contain', marginBottom: 20 }} />
         <div className="serif" style={{ fontSize: 28, fontWeight: 300, color: D.ardoise, marginBottom: 8, textAlign: 'center' }}>
-          Bonjour, {user.nom.split(' ')[0]} !
+          Bonjour, {user.nom} !
         </div>
         <div style={{ fontSize: 13, color: D.gris, textAlign: 'center', marginBottom: 32 }}>
           Connexion réussie ✓
