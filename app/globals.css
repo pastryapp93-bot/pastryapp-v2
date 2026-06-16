@@ -1,26 +1,52 @@
-@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300&family=Inter:wght@400;500;600&display=swap');
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
+  background: #F8F5F0;
+  color: #1C1917;
+  font-size: 14px;
+  line-height: 1.5;
+  overscroll-behavior: none;
 }
+
+.serif    { font-family: 'Fraunces', Georgia, serif; }
+.serif-i  { font-family: 'Fraunces', Georgia, serif; font-style: italic; }
+
+input, select, button, textarea { font-family: 'Inter', system-ui, sans-serif; }
+input[type=number] { -moz-appearance: textfield; }
+input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-thumb { background: #DDD8D0; border-radius: 2px; }
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes splashLogo {
+  0%   { opacity: 0; transform: scale(.85); }
+  30%  { opacity: 1; transform: scale(1); }
+  80%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.03); }
+}
+@keyframes splashText {
+  0%, 25% { opacity: 0; transform: translateY(8px); }
+  45%     { opacity: 1; transform: translateY(0); }
+  80%     { opacity: 1; }
+  100%    { opacity: 0; }
+}
+@keyframes splashLine {
+  0%, 40% { width: 0; opacity: 0; }
+  60%     { opacity: 1; }
+  80%     { width: 60px; opacity: 1; }
+  100%    { opacity: 0; }
+}
+
+.anim       { animation: slideUp .2s ease both; }
+.press      { cursor: pointer; transition: transform .1s, opacity .1s; }
+.press:active { transform: scale(.96); opacity: .85; }
