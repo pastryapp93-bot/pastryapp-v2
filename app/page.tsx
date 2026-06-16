@@ -4,6 +4,7 @@ import { loginUser } from '@/lib/supabase'
 import { D, ROLE_COLORS, ROLE_LABELS } from '@/lib/design'
 import type { User } from '@/lib/supabase'
 import DirectionApp from '@/app/roles/direction'
+import PatissierApp from '@/app/roles/patissier'
 
 // ═══════════════════════════════════════════════
 // PAGE PRINCIPALE — Routage par rôle
@@ -78,7 +79,10 @@ export default function Home() {
       {!splash && user && user.role === 'gerant' && (
         <DirectionApp user={user} onLogout={handleLogout} showToast={showToast} />
       )}
-      {!splash && user && user.role !== 'gerant' && (
+      {!splash && user && user.role === 'patissier' && (
+        <PatissierApp user={user} onLogout={handleLogout} showToast={showToast} />
+      )}
+      {!splash && user && !['gerant','patissier'].includes(user.role) && (
         <WelcomeScreen user={user} onLogout={handleLogout} />
       )}
     </div>
