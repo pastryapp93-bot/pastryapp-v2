@@ -1,53 +1,58 @@
 // ═══════════════════════════════════════════════
 // DESIGN SYSTEM — PastryApp V2
-// Ardoise & Farine
+// Utilise les CSS variables pour le dark mode
 // ═══════════════════════════════════════════════
 
 export const D = {
-  // Fonds
-  craie:     '#F8F5F0',  // fond principal
-  craieMid:  '#EDE9E3',  // surfaces secondaires
-  craieDark: '#DDD8D0',  // bordures, séparateurs
-
-  // Texte
-  ardoise:   '#1C1917',  // texte principal
-  gris:      '#6B6560',  // texte secondaire
-  grisClair: '#A8A39C',  // hints, labels
-
-  // Or — accent principal
-  or:        '#C17F24',
-  orClair:   '#F0C97A',
-  orTexte:   '#7A4E0F',
-
-  // Statuts
-  vert:      '#2D7A47',
-  vertBg:    '#E8F5ED',
-  rouge:     '#B83232',
-  rougeBg:   '#FCEAEA',
-  bleu:      '#2557A7',
-  bleuBg:    '#EBF1FA',
-  orange:    '#B85C00',
-  orangeBg:  '#FEF0E2',
+  craie:     'var(--creme)',
+  craieMid:  'var(--craieMid)',
+  craieDark: 'var(--craieDark)',
+  ardoise:   'var(--ardoise)',
+  gris:      'var(--gris)',
+  grisClair: 'var(--grisClair)',
+  blanc:     'var(--blanc)',
+  or:        'var(--or)',
+  orClair:   'var(--orClair)',
+  orTexte:   'var(--orTexte)',
+  vert:      'var(--vert)',
+  vertBg:    'var(--vertBg)',
+  rouge:     'var(--rouge)',
+  rougeBg:   'var(--rougeBg)',
+  bleu:      'var(--bleu)',
+  bleuBg:    'var(--bleuBg)',
+  orange:    'var(--orange)',
+  orangeBg:  'var(--orangeBg)',
 } as const
 
-// Couleurs par rôle
+// Couleurs statiques (pour les valeurs hex directes si besoin)
+export const C = {
+  or:     '#C17F24',
+  vert:   '#2D7A47',
+  rouge:  '#B83232',
+  bleu:   '#2557A7',
+  orange: '#B85C00',
+  violet: '#7A4E9F',
+} as const
+
 export const ROLE_COLORS: Record<string, string> = {
-  gerant:                '#C17F24',
-  patissier:             '#2D7A47',
-  boulanger_livry:       '#B85C00',
-  boulanger_villemomble: '#B85C00',
-  boutique_livry:        '#2557A7',
-  boutique_villemomble:  '#7A4E9F',
-  framboise:             '#C17F24',
+  gerant:                C.or,
+  patissier:             C.vert,
+  boulanger_livry:       C.orange,
+  boulanger_villemomble: C.orange,
+  boutique_livry:        C.bleu,
+  boutique_villemomble:  C.violet,
+  framboise:             C.or,
 }
 
-// Labels par rôle
 export const ROLE_LABELS: Record<string, string> = {
   gerant:                'Direction',
-  patissier:             'Labo pâtisserie',
-  boulanger_livry:       'Boulangerie Livry',
-  boulanger_villemomble: 'Boulangerie Villemomble',
+  patissier:             'Pâtissier',
+  boulanger_livry:       'Boulanger Livry',
+  boulanger_villemomble: 'Boulanger Villemomble',
   boutique_livry:        'QG Boutique Livry',
   boutique_villemomble:  "L'Atelier des Saveurs",
-  framboise:             'Client externe',
+  framboise:             'La Framboise',
 }
+
+export const EQUIPE_ROLES = ['patissier', 'boulanger_livry', 'boulanger_villemomble']
+export const CLIENT_ROLES = ['boutique_livry', 'boutique_villemomble', 'framboise']
