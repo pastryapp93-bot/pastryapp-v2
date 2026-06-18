@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { D } from '@/lib/design'
-import { AppHeader, BottomNav, Card, Badge, SectionLabel, Loader, Avatar } from '@/app/components/ui'
+import { AppHeader, TabBar, Card, Badge, SectionLabel, Loader, Avatar, EmptyState } from '@/app/components/ui'
 import type { User } from '@/lib/supabase'
 import DirectionProduits from './produits'
 
@@ -113,7 +113,7 @@ export default function DirectionApp({ user, onLogout, showToast }: {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <AppHeader user={user} onLogout={onLogout} badge={totalBadge} />
+      <AppHeader user={user} onLogout={onLogout} right={totalBadge > 0 ? <span style={{background:'var(--rougeBg)',color:'var(--rouge)',borderRadius:20,padding:'3px 10px',fontSize:11,fontWeight:600}}>{totalBadge} urgent{totalBadge>1?'s':''}</span> : undefined} />
       <div style={{ flex: 1, overflowY: 'auto', background: D.craie }}>
         {tab === 'accueil'     && <DirectionAccueil commandes={commandes} stock={stock} valider={validerCommande} />}
         {tab === 'commandes'   && <DirectionCommandes commandes={commandes} clients={clients} valider={validerCommande} refuser={refuserCommande} />}
@@ -124,7 +124,7 @@ export default function DirectionApp({ user, onLogout, showToast }: {
         {tab === 'stock'       && <DirectionStock stock={stock} traiter={traiterStock} showToast={showToast} load={load} />}
         {tab === 'config'      && <DirectionConfig clients={clients} showToast={showToast} load={load} />}
       </div>
-      <BottomNav items={navItems} active={tab} onChange={setTab} />
+      <TabBar tabs={navItems} active={tab} onChange={setTab} />
     </div>
   )
 }
@@ -201,7 +201,7 @@ function DirectionAccueil({ commandes, stock, valider }: {
           <SectionLabel>⏰ À valider maintenant</SectionLabel>
           <div style={{ marginTop: 8 }}>
             {pending.map((cmd: any) => (
-              <Card key={cmd.id} borderColor={cmd.users?.couleur || D.or}>
+              <Card key={cmd.id} accent={cmd.users?.couleur || D.or}>
                 <div style={{ padding: '12px 14px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -232,13 +232,13 @@ function DirectionAccueil({ commandes, stock, valider }: {
           <SectionLabel color={D.rouge}>🔴 Manques urgents</SectionLabel>
           <div style={{ marginTop: 8 }}>
             {urgentStock.slice(0, 3).map((s: any) => (
-              <Card key={s.id} borderColor={D.rouge}>
+              <Card key={s.id} accent={D.rouge}>
                 <div style={{ padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: D.ardoise }}>{s.matieres?.nom}</div>
                     <div style={{ fontSize: 10, color: D.gris }}>{s.users?.nom} · {s.quantite} {s.unite}</div>
                   </div>
-                  <Badge type="rouge">Urgent</Badge>
+                  <Badge variant="rouge">Urgent</Badge>
                 </div>
               </Card>
             ))}
@@ -302,7 +302,7 @@ function DirectionCommandes({ commandes, clients, valider, refuser }: {
             <div>Aucune commande</div>
           </div>
         ) : filtered.map((cmd: any) => (
-          <Card key={cmd.id} borderColor={cmd.users?.couleur || D.or}>
+          <Card key={cmd.id} accent={cmd.users?.couleur || D.or}>
             <div style={{ padding: '12px 14px' }}>
               {/* En-tête */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
@@ -316,7 +316,7 @@ function DirectionCommandes({ commandes, clients, valider, refuser }: {
                     </div>
                   </div>
                 </div>
-                <Badge type={statusBadge[cmd.statut] || 'gris'}>{statusLabel[cmd.statut] || cmd.statut}</Badge>
+                <Badge variant={statusBadge[cmd.statut] || 'gris'}>{statusLabel[cmd.statut] || cmd.statut}</Badge>
               </div>
 
               {/* Horodatages */}
@@ -424,13 +424,13 @@ function DirectionCalendrier({ commandes }: { commandes: any[] }) {
           <SectionLabel>{new Date(selDay + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</SectionLabel>
           <div style={{ marginTop: 8 }}>
             {selCommandes.map((cmd: any) => (
-              <Card key={cmd.id} borderColor={cmd.users?.couleur || D.or}>
+              <Card key={cmd.id} accent={cmd.users?.couleur || D.or}>
                 <div style={{ padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: D.ardoise }}>{cmd.users?.nom || '?'}</div>
                     <div style={{ fontSize: 11, color: D.gris }}>{Number(cmd.total_ht).toFixed(2)} € HT</div>
                   </div>
-                  <Badge type={cmd.statut === 'validee' ? 'vert' : cmd.statut === 'refusee' ? 'rouge' : 'or'}>
+                  <Badge variant={cmd.statut === 'validee' ? 'vert' : cmd.statut === 'refusee' ? 'rouge' : 'or'}>
                     {cmd.statut === 'validee' ? 'Validée' : cmd.statut === 'refusee' ? 'Refusée' : 'En attente'}
                   </Badge>
                 </div>
@@ -658,7 +658,7 @@ function DirectionClients({ clients, showToast, load }: {
           <div key={g.label}>
             <SectionLabel>{g.label}</SectionLabel>
             {gc.map((c: any) => (
-              <Card key={c.id} borderColor={c.couleur}>
+              <Card key={c.id} accent={c.couleur}>
                 <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
                   <Avatar nom={c.nom} couleur={c.couleur} size={42} />
                   <div style={{ flex: 1 }}>
@@ -774,7 +774,7 @@ function DirectionFacturation({ clients, showToast }: { clients: any[], showToas
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div className="serif" style={{ fontSize: 18, fontWeight: 300, color: D.ardoise }}>{Number(f.total_ttc).toFixed(2)} €</div>
-                  <Badge type={f.statut === 'payee' ? 'vert' : f.statut === 'envoyee' ? 'bleu' : 'gris'}>{f.statut}</Badge>
+                  <Badge variant={f.statut === 'payee' ? 'vert' : f.statut === 'envoyee' ? 'bleu' : 'gris'}>{f.statut}</Badge>
                 </div>
               </div>
               {openId === f.id && (
@@ -969,7 +969,7 @@ function DirectionStock({ stock, traiter, showToast, load }: {
             <div style={{ background: D.rougeBg, border: `1px solid ${D.rouge}30`, borderRadius: 12, padding: 12, marginBottom: 12 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: D.rouge, marginBottom: 8, textTransform: 'uppercase' }}>🔴 Urgent</div>
               {urgent.map((s: any) => (
-                <Card key={s.id} borderColor={D.rouge}>
+                <Card key={s.id} accent={D.rouge}>
                   <div style={{ padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 600, color: D.ardoise }}>{s.matieres?.nom}</div>
@@ -985,7 +985,7 @@ function DirectionStock({ stock, traiter, showToast, load }: {
             <>
               <SectionLabel>⏳ En attente</SectionLabel>
               {normal.map((s: any) => (
-                <Card key={s.id} borderColor={D.or}>
+                <Card key={s.id} accent={D.or}>
                   <div style={{ padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 600, color: D.ardoise }}>{s.matieres?.nom}</div>
