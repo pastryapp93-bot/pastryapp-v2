@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { D } from '@/lib/design'
-import { Card, SectionLabel, Loader, Badge } from '@/app/components/ui'
+import { Card, SectionLabel, Loader, Badge, EmptyState } from '@/app/components/ui'
 
 type ShowToast = (msg: string, type?: string) => void
 
@@ -247,7 +247,7 @@ export default function DirectionProduits({ showToast, clients }: {
                         {Number(prod.prix_base).toFixed(2)} € HT / {prod.unite}
                       </div>
                     </div>
-                    {!prod.actif && <Badge type="gris">Inactif</Badge>}
+                    {!prod.actif && <Badge variant="gris">Inactif</Badge>}
                     <button onClick={() => openForm(prod)} style={{ width: 30, height: 30, background: D.craieMid, border: `1px solid ${D.craieDark}`, borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>✏️</button>
                     <button onClick={() => toggleActif(prod.id, prod.actif)} style={{ width: 30, height: 30, background: prod.actif ? D.vertBg : D.orangeBg, border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 11, color: prod.actif ? D.vert : D.orange, fontWeight: 700 }}>
                       {prod.actif ? '✓' : '○'}
