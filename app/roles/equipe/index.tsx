@@ -148,10 +148,14 @@ export default function EquipeApp({ user, onLogout, showToast }: {
   const rappel24h = isBoul ? cmdsPain.filter(c => c.date_livraison === demain && c.statut !== 'pret') : []
   const rappel48h = isBoul ? cmdsPain.filter(c => c.date_livraison === dans2j && c.statut !== 'pret') : []
 
-  const TABS = [
+  const TABS = isPat ? [
     { id: 'jour',       icon: '📋', label: 'Aujourd\'hui', badge: nbNouv },
     { id: 'production', icon: '🔥', label: 'Production',   badge: enCours },
     { id: 'pret',       icon: '✅', label: 'Prêt',         badge: termines },
+    { id: 'stock',      icon: '📦', label: 'Stock',        badge: 0 },
+  ] : [
+    { id: 'jour',       icon: '📋', label: 'Commandes',    badge: nbNouv },
+    { id: 'pret',       icon: '✅', label: 'Prêt',         badge: cmdsPain.filter((c:any) => c.statut === 'en_production').length },
     { id: 'stock',      icon: '📦', label: 'Stock',        badge: 0 },
   ]
 
@@ -177,7 +181,7 @@ export default function EquipeApp({ user, onLogout, showToast }: {
 
       <div style={{ flex: 1, overflowY: 'auto', background: D.craie, paddingBottom: 24 }}>
         {tab === 'jour'       && <EquipeJour user={user} isPat={isPat} commandes={commandes} cmdsPain={cmdsPain} byProduit={byProduit} prodStatuts={prodStatuts} today={today} demain={demain} dans2j={dans2j} marquerEtape={marquerEtape} couleur={couleur} />}
-        {tab === 'production' && <EquipeProduction familles={familles} produits={produits} byProduit={byProduit} prodStatuts={prodStatuts} updateProdStatut={updateProdStatut} couleur={couleur} />}
+        {tab === 'production' && isPat && <EquipeProduction familles={familles} produits={produits} byProduit={byProduit} prodStatuts={prodStatuts} updateProdStatut={updateProdStatut} couleur={couleur} />}
         {tab === 'pret'       && <EquipePret isPat={isPat} commandes={commandes} cmdsPain={cmdsPain} prodStatuts={prodStatuts} byProduit={byProduit} marquerEtape={marquerEtape} couleur={couleur} />}
         {tab === 'stock'      && <EquipeStock user={user} matieres={matieres} showToast={showToast} couleur={couleur} />}
       </div>
@@ -335,8 +339,8 @@ function CmdPainCard({ cmd, urgence, marquerEtape }: any) {
   const tot = (cmd.commande_pain_lignes || []).reduce((s: number, l: any) => s + l.quantite, 0)
   const color = urgence === 'today' || urgence === 'demain' ? C.rouge : urgence === '2j' ? C.orange : C.or
   const dateStr = new Date(cmd.date_livraison + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
-  const STATUT: Record<string, string> = { en_attente: '⏳ En attente', vue: '✓ Vu', en_production: '🔥 En prod.', pret: '✅ Prêt' }
-  const STATUT_V: Record<string, any> = { en_attente: 'gris', vue: 'vert', en_production: 'or', pret: 'vert' }
+  const STATUT: Record<string, string> = { en_attente: '⏳ En attente', vue: '✓ Pris en compte', pret: '✅ Prête' }
+  const STATUT_V: Record<string, any> = { en_attente: 'gris', vue: 'vert', pret: 'vert' }
 
   return (
     <Card accent={color}>
@@ -348,20 +352,36 @@ function CmdPainCard({ cmd, urgence, marquerEtape }: any) {
           </div>
           <Badge variant={STATUT_V[cmd.statut] || 'gris'}>{STATUT[cmd.statut] || cmd.statut}</Badge>
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 8 }}>
+
+        {/* Produits */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 10 }}>
           {(cmd.commande_pain_lignes || []).map((l: any) => (
             <span key={l.id} style={{ background: `${color}10`, color, borderRadius: 6, padding: '2px 8px', fontSize: 10 }}>
               {l.produits?.nom || l.nom_produit} ×{l.quantite}
             </span>
           ))}
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: cmd.statut === 'pret' ? 0 : 8 }}>
-          {cmd.vue_at        && <span style={{ fontSize: 9, color: C.vert }}>✓ Vu {new Date(cmd.vue_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</span>}
-          {cmd.production_at && <span style={{ fontSize: 9, color: C.or }}>🔥 {new Date(cmd.production_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</span>}
-          {cmd.pret_at       && <span style={{ fontSize: 9, color: C.vert }}>✅ {new Date(cmd.pret_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</span>}
+
+        {/* Horodatages */}
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: cmd.statut === 'pret' ? 0 : 10 }}>
+          <span style={{ fontSize: 9, color: C.bleu }}>
+            📤 Reçue {new Date(cmd.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
+          </span>
+          {cmd.vue_at  && <span style={{ fontSize: 9, color: C.vert }}>✓ Pris en compte {new Date(cmd.vue_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</span>}
+          {cmd.pret_at && <span style={{ fontSize: 9, color: C.vert }}>✅ Prête {new Date(cmd.pret_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</span>}
         </div>
-        {cmd.statut === 'en_attente' && <BtnPrimary onClick={() => marquerEtape('commandes_pain', cmd.id, 'statut', 'vue', null, null)} style={{ padding: '10px' }}>Pris en compte ✓</BtnPrimary>}
-        {cmd.statut === 'vue' && <BtnPrimary onClick={() => marquerEtape('commandes_pain', cmd.id, 'statut', 'en_production', null, null)} color={C.or} style={{ padding: '10px' }}>🔥 Lancer la production</BtnPrimary>}
+
+        {/* Actions — workflow simplifié boulanger */}
+        {cmd.statut === 'en_attente' && (
+          <BtnPrimary onClick={() => marquerEtape('commandes_pain', cmd.id, 'statut', 'vue', null, null)} style={{ padding: '11px' }}>
+            Pris en compte ✓
+          </BtnPrimary>
+        )}
+        {cmd.statut === 'vue' && (
+          <BtnPrimary onClick={() => marquerEtape('commandes_pain', cmd.id, 'statut', 'pret', null, null)} color={C.vert} style={{ padding: '11px' }}>
+            ✅ Commande prête
+          </BtnPrimary>
+        )}
       </div>
     </Card>
   )
@@ -586,7 +606,7 @@ function EquipePret({ isPat, commandes, cmdsPain, prodStatuts, byProduit, marque
         )
       })}
 
-      {!isPat && cmdsPain.filter((c: any) => c.statut === 'en_production').map((cmd: any) => (
+      {!isPat && cmdsPain.filter((c: any) => c.statut === 'vue').map((cmd: any) => (
         <Card key={cmd.id} accent={C.vert}>
           <div style={{ padding: '10px 14px', background: D.craieMid, borderBottom: `1px solid ${D.craieDark}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: C.vert }}>
@@ -595,7 +615,7 @@ function EquipePret({ isPat, commandes, cmdsPain, prodStatuts, byProduit, marque
             <div style={{ fontSize: 13, fontWeight: 600 }}>{(cmd.commande_pain_lignes||[]).reduce((s:number,l:any)=>s+l.quantite,0)} pcs</div>
           </div>
           <div style={{ padding: '10px 14px' }}>
-            <BtnPrimary onClick={() => marquerEtape('commandes_pain', cmd.id, 'statut', 'pret', null, null)} color={C.vert} style={{ padding: '10px' }}>✅ Pain prêt — notifier la boutique</BtnPrimary>
+            <BtnPrimary onClick={() => marquerEtape('commandes_pain', cmd.id, 'statut', 'pret', null, null)} color={C.vert} style={{ padding: '10px' }}>✅ Commande prête — notifier la boutique</BtnPrimary>
           </div>
         </Card>
       ))}
