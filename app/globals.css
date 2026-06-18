@@ -1,52 +1,103 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,200;0,9..144,300;0,9..144,500;1,9..144,200;1,9..144,300&family=Inter:wght@400;500;600;700&display=swap');
 
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --creme:      #F8F5F0;
+  --craieMid:   #EDE9E3;
+  --craieDark:  #DDD8D0;
+  --ardoise:    #1C1917;
+  --gris:       #6B6560;
+  --grisClair:  #A8A39C;
+  --blanc:      #FFFFFF;
+  --or:         #C17F24;
+  --orClair:    #F0C97A;
+  --orTexte:    #7A4E0F;
+  --vert:       #2D7A47;
+  --vertBg:     #E8F5ED;
+  --rouge:      #B83232;
+  --rougeBg:    #FCEAEA;
+  --bleu:       #2557A7;
+  --bleuBg:     #EBF1FA;
+  --orange:     #B85C00;
+  --orangeBg:   #FEF0E2;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --creme:     #1A1714;
+    --craieMid:  #242018;
+    --craieDark: #352F28;
+    --ardoise:   #F0EDE8;
+    --gris:      #A8A39C;
+    --grisClair: #6B6560;
+    --blanc:     #242018;
+    --or:        #D4922A;
+    --orClair:   #8A5A18;
+    --orTexte:   #F0C97A;
+    --vert:      #3A9E5A;
+    --vertBg:    #1A3022;
+    --rouge:     #C94444;
+    --rougeBg:   #2E1A1A;
+    --bleu:      #4A7AC9;
+    --bleuBg:    #1A2540;
+    --orange:    #D47020;
+    --orangeBg:  #2E2010;
+  }
+}
 
 body {
-  font-family: 'Inter', system-ui, sans-serif;
-  background: #F8F5F0;
-  color: #1C1917;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--creme);
+  color: var(--ardoise);
   font-size: 14px;
   line-height: 1.5;
   overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
 }
 
-.serif    { font-family: 'Fraunces', Georgia, serif; }
-.serif-i  { font-family: 'Fraunces', Georgia, serif; font-style: italic; }
+.serif   { font-family: 'Fraunces', Georgia, serif; }
+.serif-i { font-family: 'Fraunces', Georgia, serif; font-style: italic; }
 
-input, select, button, textarea { font-family: 'Inter', system-ui, sans-serif; }
+input, select, button, textarea { font-family: inherit; }
 input[type=number] { -moz-appearance: textfield; }
 input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
 ::-webkit-scrollbar { width: 3px; height: 3px; }
-::-webkit-scrollbar-thumb { background: #DDD8D0; border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: var(--craieDark); border-radius: 2px; }
 
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
+/* Animations */
+@keyframes fadeIn    { from { opacity: 0 } to { opacity: 1 } }
+@keyframes slideUp   { from { opacity: 0; transform: translateY(12px) } to { opacity: 1; transform: translateY(0) } }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-8px) } to { opacity: 1; transform: translateY(0) } }
+@keyframes scaleIn   { from { opacity: 0; transform: scale(.94) } to { opacity: 1; transform: scale(1) } }
+@keyframes pulse     { 0%, 100% { opacity: 1 } 50% { opacity: .5 } }
+
 @keyframes splashLogo {
-  0%   { opacity: 0; transform: scale(.85); }
-  30%  { opacity: 1; transform: scale(1); }
-  80%  { opacity: 1; transform: scale(1); }
-  100% { opacity: 0; transform: scale(1.03); }
+  0%   { opacity: 0; transform: scale(.85) }
+  30%  { opacity: 1; transform: scale(1) }
+  80%  { opacity: 1; transform: scale(1) }
+  100% { opacity: 0; transform: scale(1.04) }
 }
 @keyframes splashText {
-  0%, 25% { opacity: 0; transform: translateY(8px); }
-  45%     { opacity: 1; transform: translateY(0); }
-  80%     { opacity: 1; }
-  100%    { opacity: 0; }
+  0%, 25% { opacity: 0; transform: translateY(8px) }
+  45%     { opacity: 1; transform: translateY(0) }
+  80%     { opacity: 1 }
+  100%    { opacity: 0 }
 }
 @keyframes splashLine {
-  0%, 40% { width: 0; opacity: 0; }
-  60%     { opacity: 1; }
-  80%     { width: 60px; opacity: 1; }
-  100%    { opacity: 0; }
+  0%, 40% { width: 0; opacity: 0 }
+  60%     { opacity: 1 }
+  80%     { width: 60px; opacity: 1 }
+  100%    { opacity: 0 }
 }
 
-.anim       { animation: slideUp .2s ease both; }
-.press      { cursor: pointer; transition: transform .1s, opacity .1s; }
-.press:active { transform: scale(.96); opacity: .85; }
+/* Utilitaires */
+.anim-up   { animation: slideUp .22s ease both }
+.anim-in   { animation: scaleIn .18s ease both }
+.press     { cursor: pointer; transition: transform .1s, opacity .1s; user-select: none }
+.press:active { transform: scale(.96); opacity: .85 }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important }
+}
