@@ -676,7 +676,7 @@ function EquipeStock({ user, matieres, showToast, couleur }: any) {
           </div>
           {nbSel > 0 && (
             <div style={{ margin:'8px 14px', background:`${C.or}10`, border:`1px solid ${C.or}40`, borderRadius:10, padding:'8px 14px', display:'flex', justifyContent:'space-between' }}>
-              <span style={{ fontSize:12, color:D.orTexte, fontWeight:600 }}>{nbSel} sélectionné{nbSel>1?'s':''}</span>
+              <span style={{ fontSize:12, color:'#7A4E0F', fontWeight:600 }}>{nbSel} sélectionné{nbSel>1?'s':''}</span>
               <button onClick={() => setSelections({})} style={{ background:'transparent', border:'none', color:D.gris, fontSize:12, cursor:'pointer' }}>Effacer</button>
             </div>
           )}
