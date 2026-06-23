@@ -1,103 +1,162 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,200;0,9..144,300;0,9..144,500;1,9..144,200;1,9..144,300&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,300;1,9..144,400&family=Inter:wght@400;500;600;700&display=swap');
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
-:root {
-  --creme:      #F8F5F0;
-  --craieMid:   #EDE9E3;
-  --craieDark:  #DDD8D0;
-  --ardoise:    #1C1917;
-  --gris:       #6B6560;
-  --grisClair:  #A8A39C;
-  --blanc:      #FFFFFF;
-  --or:         #C17F24;
-  --orClair:    #F0C97A;
-  --orTexte:    #7A4E0F;
-  --vert:       #2D7A47;
-  --vertBg:     #E8F5ED;
-  --rouge:      #B83232;
-  --rougeBg:    #FCEAEA;
-  --bleu:       #2557A7;
-  --bleuBg:     #EBF1FA;
-  --orange:     #B85C00;
-  --orangeBg:   #FEF0E2;
+*, *::before, *::after {
+  box-sizing: border-box; margin: 0; padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Dark mode */
+/* ══════════════════════════════════════════════
+   DESIGN SYSTEM — GEMINI × PastryApp
+   ══════════════════════════════════════════════ */
+:root {
+  --font-title:  'Fraunces', serif;
+  --font-body:   'Inter', sans-serif;
+
+  /* Fonds */
+  --bg-app:       #F8F5F0;
+  --bg-card:      rgba(255, 255, 255, 0.75);
+  --bg-card-solid: #FFFFFF;
+  --border-color: rgba(28, 25, 23, 0.06);
+  --border-focus: #C17F24;
+
+  /* Textes */
+  --text-main:   #1C1917;
+  --text-muted:  #78716C;
+  --text-light:  #A8A29E;
+
+  /* Marque */
+  --brand-gold:      #C17F24;
+  --brand-gold-glow: rgba(193, 127, 36, 0.15);
+  --gradient-gold:   linear-gradient(135deg, #DF9F42 0%, #C17F24 100%);
+  --gradient-dark:   linear-gradient(135deg, #2E2A27 0%, #1C1917 100%);
+
+  /* Statuts */
+  --status-received:    #3B82F6;
+  --status-received-bg: rgba(59, 130, 246, 0.10);
+  --status-progress:    #F59E0B;
+  --status-progress-bg: rgba(245, 158, 11, 0.10);
+  --status-baking:      #EF4444;
+  --status-baking-bg:   rgba(239, 68, 68, 0.10);
+  --status-ready:       #10B981;
+  --status-ready-bg:    rgba(16, 185, 129, 0.10);
+  --status-orange:      #F97316;
+  --status-orange-bg:   rgba(249, 115, 22, 0.10);
+
+  /* Effets */
+  --shadow-sm:  0 1px 2px rgba(28, 25, 23, 0.03);
+  --shadow-md:  0 4px 6px -1px rgba(28, 25, 23, 0.05), 0 2px 4px -1px rgba(28, 25, 23, 0.03);
+  --shadow-lg:  0 10px 25px -5px rgba(28, 25, 23, 0.06), 0 8px 10px -6px rgba(28, 25, 23, 0.04);
+  --shadow-xl:  0 25px 50px -12px rgba(28, 25, 23, 0.10);
+  --blur-glass: blur(16px);
+
+  /* Rayons */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+
+  /* Transition */
+  --transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ══ DARK MODE ══════════════════════════════ */
 @media (prefers-color-scheme: dark) {
   :root {
-    --creme:     #1A1714;
-    --craieMid:  #242018;
-    --craieDark: #352F28;
-    --ardoise:   #F0EDE8;
-    --gris:      #A8A39C;
-    --grisClair: #6B6560;
-    --blanc:     #242018;
-    --or:        #D4922A;
-    --orClair:   #8A5A18;
-    --orTexte:   #F0C97A;
-    --vert:      #3A9E5A;
-    --vertBg:    #1A3022;
-    --rouge:     #C94444;
-    --rougeBg:   #2E1A1A;
-    --bleu:      #4A7AC9;
-    --bleuBg:    #1A2540;
-    --orange:    #D47020;
-    --orangeBg:  #2E2010;
+    --bg-app:        #0F0D0C;
+    --bg-card:       rgba(28, 25, 23, 0.70);
+    --bg-card-solid: #1C1917;
+    --border-color:  rgba(255, 255, 255, 0.06);
+
+    --text-main:  #F5F5F4;
+    --text-muted: #A8A29E;
+    --text-light: #78716C;
+
+    --brand-gold:      #E5A952;
+    --brand-gold-glow: rgba(229, 169, 82, 0.20);
+    --gradient-gold:   linear-gradient(135deg, #E5A952 0%, #C17F24 100%);
+    --gradient-dark:   linear-gradient(135deg, #1C1917 0%, #0F0D0C 100%);
+
+    --shadow-sm:  0 1px 2px rgba(0, 0, 0, 0.50);
+    --shadow-md:  0 4px 12px rgba(0, 0, 0, 0.40);
+    --shadow-lg:  0 12px 30px rgba(0, 0, 0, 0.50);
+    --shadow-xl:  0 25px 50px rgba(0, 0, 0, 0.60);
+
+    --status-received-bg: rgba(59, 130, 246, 0.20);
+    --status-progress-bg: rgba(245, 158, 11, 0.20);
+    --status-baking-bg:   rgba(239, 68, 68, 0.20);
+    --status-ready-bg:    rgba(16, 185, 129, 0.20);
+    --status-orange-bg:   rgba(249, 115, 22, 0.20);
   }
 }
 
+/* ══ BASE ════════════════════════════════════ */
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background: var(--creme);
-  color: var(--ardoise);
+  font-family: var(--font-body);
+  background: var(--bg-app);
+  color: var(--text-main);
   font-size: 14px;
   line-height: 1.5;
   overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-.serif   { font-family: 'Fraunces', Georgia, serif; }
-.serif-i { font-family: 'Fraunces', Georgia, serif; font-style: italic; }
+.serif   { font-family: var(--font-title); }
+.serif-i { font-family: var(--font-title); font-style: italic; }
 
-input, select, button, textarea { font-family: inherit; }
+input, select, button, textarea { font-family: var(--font-body); }
 input[type=number] { -moz-appearance: textfield; }
 input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
-::-webkit-scrollbar { width: 3px; height: 3px; }
-::-webkit-scrollbar-thumb { background: var(--craieDark); border-radius: 2px; }
 
-/* Animations */
+::-webkit-scrollbar { width: 0; height: 0; }
+
+/* ══ ANIMATIONS ══════════════════════════════ */
 @keyframes fadeIn    { from { opacity: 0 } to { opacity: 1 } }
-@keyframes slideUp   { from { opacity: 0; transform: translateY(12px) } to { opacity: 1; transform: translateY(0) } }
-@keyframes slideDown { from { opacity: 0; transform: translateY(-8px) } to { opacity: 1; transform: translateY(0) } }
-@keyframes scaleIn   { from { opacity: 0; transform: scale(.94) } to { opacity: 1; transform: scale(1) } }
-@keyframes pulse     { 0%, 100% { opacity: 1 } 50% { opacity: .5 } }
+@keyframes slideUp   { from { opacity: 0; transform: translateY(16px) } to { opacity: 1; transform: translateY(0) } }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-10px) } to { opacity: 1; transform: translateY(0) } }
+@keyframes scaleIn   { from { opacity: 0; transform: scale(.93) } to { opacity: 1; transform: scale(1) } }
+@keyframes slideUpFull { from { transform: translateY(100%) } to { transform: translateY(0) } }
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%       { transform: scale(2.4); opacity: 0; }
+}
+@keyframes pulseSoft {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: .4; }
+}
 
 @keyframes splashLogo {
-  0%   { opacity: 0; transform: scale(.85) }
-  30%  { opacity: 1; transform: scale(1) }
+  0%   { opacity: 0; transform: scale(.80) }
+  25%  { opacity: 1; transform: scale(1) }
   80%  { opacity: 1; transform: scale(1) }
-  100% { opacity: 0; transform: scale(1.04) }
+  100% { opacity: 0; transform: scale(1.05) }
 }
 @keyframes splashText {
-  0%, 25% { opacity: 0; transform: translateY(8px) }
-  45%     { opacity: 1; transform: translateY(0) }
+  0%, 20% { opacity: 0; transform: translateY(10px) }
+  40%     { opacity: 1; transform: translateY(0) }
   80%     { opacity: 1 }
   100%    { opacity: 0 }
 }
-@keyframes splashLine {
-  0%, 40% { width: 0; opacity: 0 }
-  60%     { opacity: 1 }
-  80%     { width: 60px; opacity: 1 }
-  100%    { opacity: 0 }
+@keyframes splashFade {
+  0%, 70% { opacity: 1 }
+  100%    { opacity: 0; pointer-events: none }
 }
 
-/* Utilitaires */
-.anim-up   { animation: slideUp .22s ease both }
-.anim-in   { animation: scaleIn .18s ease both }
-.press     { cursor: pointer; transition: transform .1s, opacity .1s; user-select: none }
-.press:active { transform: scale(.96); opacity: .85 }
+/* ══ UTILITAIRES ═════════════════════════════ */
+.press { cursor: pointer; transition: var(--transition); user-select: none; }
+.press:active { transform: scale(.97); opacity: .9; }
+
+.glass {
+  background: var(--bg-card);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  border: 1px solid var(--border-color);
+}
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
 }
