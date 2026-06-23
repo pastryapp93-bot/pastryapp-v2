@@ -7,6 +7,18 @@ import DirectionApp from '@/app/roles/direction'
 import EquipeApp    from '@/app/roles/equipe'
 import ClientApp    from '@/app/roles/client'
 
+// Interface à afficher selon le type de compte (repli sur le rôle pour les sessions déjà ouvertes)
+function interfaceFor(u: User): 'direction' | 'equipe' | 'client' | null {
+  const t = u.type
+  if (t === 'direction') return 'direction'
+  if (t === 'personnel') return 'equipe'
+  if (t === 'boutique' || t === 'societe' || t === 'particulier') return 'client'
+  if (u.role === 'gerant') return 'direction'
+  if (EQUIPE_ROLES.includes(u.role)) return 'equipe'
+  if (CLIENT_ROLES.includes(u.role)) return 'client'
+  return null
+}
+
 export default function Home() {
   const [user, setUser]     = useState<User | null>(null)
   const [splash, setSplash] = useState(true)
@@ -30,9 +42,7 @@ export default function Home() {
 
   if (!mounted) return null
 
-  const isDirection = user?.role === 'gerant'
-  const isEquipe    = user ? EQUIPE_ROLES.includes(user.role) : false
-  const isClient    = user ? CLIENT_ROLES.includes(user.role) : false
+  const iface = user ? interfaceFor(user) : null
 
   return (
     <div style={{ background: D.craie, minHeight: '100vh', maxWidth: 480, margin: '0 auto', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
@@ -59,9 +69,9 @@ export default function Home() {
 
       {splash && <SplashScreen />}
       {!splash && !user          && <LoginPage onLogin={handleLogin} />}
-      {!splash && user && isDirection && <DirectionApp user={user} onLogout={handleLogout} showToast={showToast} />}
-      {!splash && user && isEquipe    && <EquipeApp    user={user} onLogout={handleLogout} showToast={showToast} />}
-      {!splash && user && isClient    && <ClientApp    user={user} onLogout={handleLogout} showToast={showToast} />}
+      {!splash && user && iface === 'direction' && <DirectionApp user={user} onLogout={handleLogout} showToast={showToast} />}
+      {!splash && user && iface === 'equipe'    && <EquipeApp    user={user} onLogout={handleLogout} showToast={showToast} />}
+      {!splash && user && iface === 'client'    && <ClientApp    user={user} onLogout={handleLogout} showToast={showToast} />}
     </div>
   )
 }
