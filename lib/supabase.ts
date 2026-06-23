@@ -15,6 +15,9 @@ export type Role =
   | 'boutique_villemomble'
   | 'framboise'
 
+export type AccountType = 'direction' | 'boutique' | 'societe' | 'particulier' | 'personnel'
+export type Poste = 'patissier' | 'boulanger' | 'vendeur'
+
 export type User = {
   id: string
   login: string
@@ -23,6 +26,16 @@ export type User = {
   couleur: string
   logo_url: string | null
   email: string | null
+  // Modèle de comptes dynamique (migration 001)
+  type?: AccountType | null
+  poste?: Poste | null
+  boutique_id?: string | null
+}
+
+export type Reglage = {
+  cle: string
+  valeur: string | null
+  maj_at: string
 }
 
 export type Famille = {
@@ -133,5 +146,15 @@ export async function loginUser(login: string, password: string): Promise<User |
     p_password: password
   })
   if (error || !data || data.length === 0) return null
-  return data[0] as User
+  const base = data[0] as User
+  // Enrichit avec le type de compte si le RPC ne le renvoie pas encore (migration 001)
+  if (!base.type) {
+    const { data: extra } = await supabase
+      .from('users')
+      .select('type, poste, boutique_id')
+      .eq('id', base.id)
+      .single()
+    if (extra) return { ...base, ...extra } as User
+  }
+  return base
 }
