@@ -13,10 +13,9 @@ const NAV = [
   { id: 'commandes',   icon: '📋', label: 'Commandes' },
   { id: 'calendrier',  icon: '📅', label: 'Calendrier' },
   { id: 'produits',    icon: '🛍️', label: 'Produits' },
-  { id: 'clients',     icon: '👥', label: 'Clients' },
+  { id: 'comptes',     icon: '👥', label: 'Comptes' },
   { id: 'facturation', icon: '💶', label: 'Facturation' },
   { id: 'stock',       icon: '📦', label: 'Stock' },
-  { id: 'config',      icon: '⚙️', label: 'Config' },
 ]
 
 // ═══════════════════════════════════════════════
@@ -119,10 +118,9 @@ export default function DirectionApp({ user, onLogout, showToast }: {
         {tab === 'commandes'   && <DirectionCommandes commandes={commandes} clients={clients} valider={validerCommande} refuser={refuserCommande} />}
         {tab === 'calendrier'  && <DirectionCalendrier commandes={commandes} />}
         {tab === 'produits'    && <DirectionProduits showToast={showToast} clients={clients} />}
-        {tab === 'clients'     && <DirectionClients clients={clients} showToast={showToast} load={load} />}
+        {tab === 'comptes'     && <DirectionComptes showToast={showToast} load={load} />}
         {tab === 'facturation' && <DirectionFacturation clients={clients} showToast={showToast} />}
         {tab === 'stock'       && <DirectionStock stock={stock} traiter={traiterStock} showToast={showToast} load={load} />}
-        {tab === 'config'      && <DirectionConfig clients={clients} showToast={showToast} load={load} />}
       </div>
       <TabBar tabs={navItems} active={tab} onChange={setTab} />
     </div>
@@ -444,173 +442,157 @@ function DirectionCalendrier({ commandes }: { commandes: any[] }) {
 }
 
 // ═══════════════════════════════════════════════
-// CLIENTS
+// COMPTES
 // ═══════════════════════════════════════════════
-function DirectionClients({ clients, showToast, load }: {
-  clients: any[], showToast: ShowToast, load: () => void
+function DirectionComptes({ showToast, load }: {
+  showToast: ShowToast, load: () => void
 }) {
-  const [mode, setMode] = useState<'list' | 'form'>('list')
-  const [edit, setEdit] = useState<any>(null)
-  const [form, setForm] = useState({
-    nom: '', login: '', password: '', type_acces: 'societe',
-    role: 'framboise', couleur: '#C17F24',
-    email: '', telephone: '', adresse: '', siret: '',
+  const [comptes, setComptes] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [mode, setMode]       = useState<'list' | 'form'>('list')
+  const [edit, setEdit]       = useState<any>(null)
+  const [saving, setSaving]   = useState(false)
+  const [form, setForm]       = useState({
+    nom: '', login: '', password: '',
+    type: 'societe', poste: 'vendeur', boutique_id: '',
+    couleur: '#C17F24', email: '',
   })
 
-  // Type d'accès → role + couleur
-  const TYPE_ACCES = [
-    {
-      id: 'societe',
-      label: 'Société cliente',
-      desc: 'Client externe (ex: La Framboise, traiteur...)',
-      icon: '🏢',
-      role: 'framboise',
-      couleur: '#C17F24',
-    },
-    {
-      id: 'particulier',
-      label: 'Client particulier',
-      desc: 'Particulier qui passe commande',
-      icon: '👤',
-      role: 'framboise',
-      couleur: '#2D7A47',
-    },
-    {
-      id: 'interne',
-      label: 'Interne',
-      desc: 'Boutique ou équipe de production',
-      icon: '🏪',
-      role: 'boutique_livry',
-      couleur: '#2557A7',
-      sousRoles: [
-        { id: 'boutique_livry',        label: 'QG Boutique Livry',     couleur: '#2557A7' },
-        { id: 'boutique_villemomble',  label: "L'Atelier des Saveurs", couleur: '#7A4E9F' },
-        { id: 'patissier',             label: 'Pâtissier',             couleur: '#2D7A47' },
-        { id: 'boulanger_livry',       label: 'Boulanger Livry',       couleur: '#B85C00' },
-        { id: 'boulanger_villemomble', label: 'Boulanger Villemomble', couleur: '#B85C00' },
-      ],
-    },
+  const fetchComptes = useCallback(async () => {
+    const { data } = await supabase.from('users').select('*').order('nom')
+    setComptes(data || [])
+    setLoading(false)
+  }, [])
+  useEffect(() => { fetchComptes() }, [fetchComptes])
+
+  const TYPES = [
+    { id: 'societe',     label: 'Société',     desc: 'Client B2B (hôtel, resto, revendeur)',       icon: '🏢' },
+    { id: 'particulier', label: 'Particulier', desc: 'Client individuel',                          icon: '👤' },
+    { id: 'boutique',    label: 'Boutique',    desc: 'Une de tes boutiques internes',              icon: '🏪' },
+    { id: 'personnel',   label: 'Personnel',   desc: 'Production : pâtissier, boulanger, vendeur', icon: '👨‍🍳' },
   ]
-
-  const typeActif = TYPE_ACCES.find(t => {
-    if (t.id === 'interne') return t.sousRoles?.some(s => s.id === form.role)
-    return t.id === form.type_acces
-  }) || TYPE_ACCES[0]
-
-  const openForm = (client?: any) => {
-    setEdit(client || null)
-    if (client) {
-      const isInterne = ['boutique_livry','boutique_villemomble','patissier','boulanger_livry','boulanger_villemomble'].includes(client.role)
-      setForm({
-        nom: client.nom || '', login: client.login || '', password: '',
-        type_acces: isInterne ? 'interne' : 'societe',
-        role: client.role || 'framboise', couleur: client.couleur || '#C17F24',
-        email: client.email || '', telephone: '', adresse: '', siret: '',
-      })
-    } else {
-      setForm({ nom: '', login: '', password: '', type_acces: 'societe', role: 'framboise', couleur: '#C17F24', email: '', telephone: '', adresse: '', siret: '' })
-    }
-    setMode('form')
+  const POSTES = [
+    { id: 'patissier', label: 'Pâtissier' },
+    { id: 'boulanger', label: 'Boulanger' },
+    { id: 'vendeur',   label: 'Vendeur' },
+  ]
+  const TYPE_LABELS: Record<string, string> = {
+    direction: 'Direction', societe: 'Société', particulier: 'Particulier', boutique: 'Boutique', personnel: 'Personnel',
   }
+  const POSTE_LABELS: Record<string, string> = { patissier: 'Pâtissier', boulanger: 'Boulanger', vendeur: 'Vendeur' }
+  const boutiques = comptes.filter(c => c.type === 'boutique')
+  const lockType = edit?.type === 'direction'
 
-  const setTypeAcces = (t: typeof TYPE_ACCES[0]) => {
-    const role = t.sousRoles ? t.sousRoles[0].id : t.role
-    const couleur = t.sousRoles ? t.sousRoles[0].couleur : t.couleur
-    setForm(prev => ({ ...prev, type_acces: t.id, role, couleur }))
+  const openForm = (c?: any) => {
+    setEdit(c || null)
+    if (c) setForm({
+      nom: c.nom || '', login: c.login || '', password: '',
+      type: c.type || 'societe', poste: c.poste || 'vendeur',
+      boutique_id: c.boutique_id || '', couleur: c.couleur || '#C17F24', email: c.email || '',
+    })
+    else setForm({ nom: '', login: '', password: '', type: 'societe', poste: 'vendeur', boutique_id: '', couleur: '#C17F24', email: '' })
+    setMode('form')
   }
 
   const save = async () => {
     if (!form.nom || !form.login) { showToast('Nom et identifiant requis', 'err'); return }
-    if (!edit && !form.password)  { showToast('Mot de passe requis', 'err'); return }
+    if (!edit && form.password.length < 4) { showToast('Mot de passe : 4 caractères minimum', 'err'); return }
+    setSaving(true)
+    const poste = form.type === 'personnel' ? form.poste : null
+    const boutique_id = form.type === 'personnel' && form.boutique_id ? form.boutique_id : null
+
     if (edit) {
-      await supabase.from('users').update({
-        nom: form.nom, login: form.login, role: form.role,
-        couleur: form.couleur, email: form.email,
+      const { error } = await supabase.from('users').update({
+        nom: form.nom, login: form.login, type: form.type,
+        poste, boutique_id, couleur: form.couleur, email: form.email || null,
       }).eq('id', edit.id)
-      if (form.password) {
-        try { await supabase.rpc('changer_password', { p_user_id: edit.id, p_new_password: form.password }) } catch {}
-      }
+      if (error) { showToast('Erreur : ' + error.message, 'err'); setSaving(false); return }
+      if (form.password) await supabase.rpc('changer_password', { p_user_id: edit.id, p_new_password: form.password })
       showToast('Compte modifié ✓')
     } else {
-      await supabase.from('users').insert({
-        nom: form.nom, login: form.login, password_hash: form.password,
-        role: form.role, couleur: form.couleur, email: form.email, actif: true,
+      const { error } = await supabase.rpc('create_account', {
+        p_login: form.login, p_password: form.password, p_nom: form.nom,
+        p_type: form.type, p_poste: poste, p_boutique_id: boutique_id,
+        p_couleur: form.couleur, p_email: form.email || null,
       })
+      if (error) {
+        showToast(/login_existe/.test(error.message) ? 'Cet identifiant existe déjà' : 'Erreur : ' + error.message, 'err')
+        setSaving(false); return
+      }
       showToast('Compte créé ✓')
     }
-    setMode('list'); load()
+    setSaving(false); setMode('list'); fetchComptes(); load()
   }
 
-  const toggleActif = async (id: string, actif: boolean) => {
-    await supabase.from('users').update({ actif: !actif }).eq('id', id)
-    showToast(!actif ? 'Compte activé ✓' : 'Compte désactivé')
-    load()
+  const toggleActif = async (c: any) => {
+    await supabase.from('users').update({ actif: !c.actif }).eq('id', c.id)
+    showToast(!c.actif ? 'Compte activé ✓' : 'Compte désactivé')
+    fetchComptes(); load()
   }
 
-  const FIELDS = [
-    { label: 'Nom / Société *',   key: 'nom',       ph: 'Ex: La Framboise SARL', type: 'text' },
-    { label: 'Identifiant *',     key: 'login',     ph: 'Ex: framboise',         type: 'text' },
-    { label: edit ? 'Nouveau mot de passe (vide = inchangé)' : 'Mot de passe *',
-                                  key: 'password',  ph: 'Minimum 4 caractères',  type: 'password' },
-    { label: 'Email',             key: 'email',     ph: 'contact@societe.fr',    type: 'email' },
-    { label: 'Téléphone',         key: 'telephone', ph: '06 00 00 00 00',        type: 'tel' },
-    { label: 'Adresse',           key: 'adresse',   ph: '12 rue du Four, 75001', type: 'text' },
-    { label: 'SIRET',             key: 'siret',     ph: '000 000 000 00000',     type: 'text' },
-  ]
-
+  // ── Formulaire ──
   if (mode === 'form') return (
     <div style={{ padding: 16, paddingBottom: 40 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
         <button onClick={() => setMode('list')} style={{ background: 'transparent', border: 'none', color: D.or, fontSize: 22, cursor: 'pointer' }}>←</button>
-        <div style={{ fontSize: 15, fontWeight: 600, color: D.ardoise }}>
-          {edit ? 'Modifier le compte' : 'Nouveau compte'}
-        </div>
+        <div style={{ fontSize: 15, fontWeight: 600, color: D.ardoise }}>{edit ? 'Modifier le compte' : 'Nouveau compte'}</div>
       </div>
 
-      {/* Type d'accès */}
-      <div style={{ fontSize: 11, color: D.gris, marginBottom: 8, textTransform: 'uppercase', letterSpacing: .5 }}>Type d'accès</div>
+      <div style={{ fontSize: 11, color: D.gris, marginBottom: 8, textTransform: 'uppercase', letterSpacing: .5 }}>Type de compte</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-        {TYPE_ACCES.map(t => (
-          <button key={t.id} onClick={() => setTypeAcces(t)} style={{
-            padding: '12px 14px', borderRadius: 12, textAlign: 'left', cursor: 'pointer',
-            border: `2px solid ${form.type_acces === t.id || (t.id === 'interne' && t.sousRoles?.some(s => s.id === form.role)) ? D.or : D.craieDark}`,
-            background: form.type_acces === t.id || (t.id === 'interne' && t.sousRoles?.some(s => s.id === form.role)) ? `${D.or}10` : 'white',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 20 }}>{t.icon}</span>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: D.ardoise }}>{t.label}</div>
-                <div style={{ fontSize: 11, color: D.gris, marginTop: 1 }}>{t.desc}</div>
+        {TYPES.map(t => {
+          const on = form.type === t.id
+          return (
+            <button key={t.id} disabled={lockType} onClick={() => setForm(prev => ({ ...prev, type: t.id }))} style={{
+              padding: '12px 14px', borderRadius: 12, textAlign: 'left', cursor: lockType ? 'not-allowed' : 'pointer',
+              border: `2px solid ${on ? D.or : D.craieDark}`, background: on ? `${D.or}10` : 'white', opacity: lockType && !on ? .5 : 1,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 20 }}>{t.icon}</span>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: D.ardoise }}>{t.label}</div>
+                  <div style={{ fontSize: 11, color: D.gris, marginTop: 1 }}>{t.desc}</div>
+                </div>
               </div>
-            </div>
-          </button>
-        ))}
+            </button>
+          )
+        })}
       </div>
+      {lockType && <div style={{ fontSize: 11, color: D.gris, marginTop: -8, marginBottom: 16 }}>Compte Direction — type verrouillé.</div>}
 
-      {/* Sous-rôle si Interne */}
-      {TYPE_ACCES[2].sousRoles?.some(s => s.id === form.role) && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 11, color: D.gris, marginBottom: 8, textTransform: 'uppercase', letterSpacing: .5 }}>Interface attribuée</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {TYPE_ACCES[2].sousRoles?.map(s => (
-              <button key={s.id} onClick={() => setForm(prev => ({ ...prev, role: s.id, couleur: s.couleur }))} style={{
-                padding: '10px 14px', borderRadius: 10, textAlign: 'left', cursor: 'pointer',
-                border: `2px solid ${form.role === s.id ? s.couleur : D.craieDark}`,
-                background: form.role === s.id ? `${s.couleur}12` : 'white',
-                color: form.role === s.id ? s.couleur : D.ardoise,
-                fontSize: 13, fontWeight: form.role === s.id ? 600 : 400,
-              }}>{s.label}</button>
-            ))}
+      {form.type === 'personnel' && (
+        <div>
+          <div style={{ fontSize: 11, color: D.gris, marginBottom: 8, textTransform: 'uppercase', letterSpacing: .5 }}>Poste</div>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+            {POSTES.map(p => {
+              const on = form.poste === p.id
+              return (
+                <button key={p.id} onClick={() => setForm(prev => ({ ...prev, poste: p.id }))} style={{
+                  flex: 1, padding: 10, borderRadius: 10, cursor: 'pointer',
+                  border: `2px solid ${on ? D.or : D.craieDark}`, background: on ? `${D.or}10` : 'white',
+                  color: on ? D.or : D.ardoise, fontSize: 13, fontWeight: on ? 600 : 400,
+                }}>{p.label}</button>
+              )
+            })}
           </div>
+          <div style={{ fontSize: 11, color: D.gris, marginBottom: 4, textTransform: 'uppercase', letterSpacing: .5 }}>Rattaché à une boutique (optionnel)</div>
+          <select value={form.boutique_id} onChange={e => setForm(prev => ({ ...prev, boutique_id: e.target.value }))} style={{ ...inputStyle }}>
+            <option value="">— Aucune —</option>
+            {boutiques.map(b => <option key={b.id} value={b.id}>{b.nom}</option>)}
+          </select>
         </div>
       )}
 
-      {/* Champs */}
-      {FIELDS.map(f => (
+      {[
+        { label: 'Nom / Société *', key: 'nom', ph: 'Ex : Hôtel Mercure' },
+        { label: 'Identifiant de connexion *', key: 'login', ph: 'Ex : mercure' },
+        { label: edit ? 'Nouveau mot de passe (vide = inchangé)' : 'Mot de passe *', key: 'password', ph: 'Min. 4 caractères' },
+        { label: 'Email (optionnel)', key: 'email', ph: 'contact@societe.fr' },
+      ].map(f => (
         <div key={f.key} style={{ marginBottom: 8 }}>
           <div style={{ fontSize: 11, color: D.gris, marginBottom: 4, textTransform: 'uppercase', letterSpacing: .5 }}>{f.label}</div>
           <input
-            type={f.type}
+            type={f.key === 'email' ? 'email' : 'text'}
             value={(form as any)[f.key]}
             onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
             placeholder={f.ph}
@@ -620,67 +602,77 @@ function DirectionClients({ clients, showToast, load }: {
         </div>
       ))}
 
-      <button onClick={save} className="press" style={{
+      <button onClick={save} disabled={saving} className="press" style={{
         width: '100%', padding: 14, background: D.ardoise, color: 'white',
         border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600,
-        cursor: 'pointer', marginTop: 8,
-      }}>
-        {edit ? 'Enregistrer ✓' : 'Créer le compte ✓'}
-      </button>
+        cursor: 'pointer', marginTop: 8, opacity: saving ? .6 : 1,
+      }}>{saving ? '…' : (edit ? 'Enregistrer ✓' : 'Créer le compte ✓')}</button>
     </div>
   )
 
-  // ── Liste groupée ──
-  const ROLE_LABELS: Record<string, string> = {
-    patissier: 'Pâtissier', boulanger_livry: 'Boulanger Livry',
-    boulanger_villemomble: 'Boulanger Villemomble',
-    boutique_livry: 'QG Boutique Livry', boutique_villemomble: "L'Atelier des Saveurs",
-    framboise: 'Client externe',
-  }
+  // ── Liste ──
+  if (loading) return <Loader />
+  const KNOWN = ['societe', 'particulier', 'boutique', 'personnel', 'direction']
   const groupes = [
-    { label: '🏢 Sociétés & Particuliers', roles: ['framboise'] },
-    { label: '🏪 Boutiques internes',       roles: ['boutique_livry', 'boutique_villemomble'] },
-    { label: '👨‍🍳 Équipe production',        roles: ['patissier', 'boulanger_livry', 'boulanger_villemomble'] },
+    { label: '🏢 Sociétés',             type: 'societe' },
+    { label: '👤 Particuliers',         type: 'particulier' },
+    { label: '🏪 Boutiques internes',   type: 'boutique' },
+    { label: '👨‍🍳 Personnel production', type: 'personnel' },
+    { label: '🛡️ Direction',            type: 'direction' },
   ]
+  const autres = comptes.filter(c => !KNOWN.includes(c.type))
+
+  const renderCard = (c: any) => (
+    <Card key={c.id} accent={c.couleur || D.or}>
+      <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10, opacity: c.actif === false ? .5 : 1 }}>
+        <Avatar nom={c.nom} couleur={c.couleur || D.or} size={42} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: c.couleur || D.ardoise }}>{c.nom}</div>
+          <div style={{ fontSize: 11, color: D.gris, marginTop: 2 }}>
+            @{c.login} · {TYPE_LABELS[c.type] || c.type || '—'}{c.type === 'personnel' && c.poste ? ' · ' + (POSTE_LABELS[c.poste] || c.poste) : ''}
+          </div>
+          {c.actif === false && <div style={{ fontSize: 10, color: D.rouge, marginTop: 1, fontWeight: 600 }}>Désactivé</div>}
+        </div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button onClick={() => openForm(c)} style={{ width: 32, height: 32, background: D.craieMid, border: `1px solid ${D.craieDark}`, borderRadius: 8, cursor: 'pointer', fontSize: 14 }}>✏️</button>
+          {c.type !== 'direction' && (
+            <button onClick={() => toggleActif(c)} style={{ width: 32, height: 32, background: c.actif ? D.vertBg : D.rougeBg, border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 12, color: c.actif ? D.vert : D.rouge, fontWeight: 700 }}>
+              {c.actif ? '✓' : '✕'}
+            </button>
+          )}
+        </div>
+      </div>
+    </Card>
+  )
 
   return (
     <div style={{ padding: 16 }}>
       <button onClick={() => openForm()} className="press" style={{
         width: '100%', padding: 12, background: D.ardoise, color: 'white',
-        border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600,
-        cursor: 'pointer', marginBottom: 16,
-      }}>+ Nouveau compte client</button>
+        border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', marginBottom: 16,
+      }}>+ Nouveau compte</button>
 
       {groupes.map(g => {
-        const gc = clients.filter(c => g.roles.includes(c.role))
-        if (gc.length === 0) return null
+        const list = comptes.filter(c => c.type === g.type)
+        if (list.length === 0) return null
         return (
-          <div key={g.label}>
+          <div key={g.type}>
             <SectionLabel>{g.label}</SectionLabel>
-            {gc.map((c: any) => (
-              <Card key={c.id} accent={c.couleur}>
-                <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <Avatar nom={c.nom} couleur={c.couleur} size={42} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: c.couleur }}>{c.nom}</div>
-                    <div style={{ fontSize: 11, color: D.gris, marginTop: 2 }}>@{c.login} · {ROLE_LABELS[c.role] || c.role}</div>
-                    {c.email && <div style={{ fontSize: 10, color: D.grisClair, marginTop: 1 }}>✉️ {c.email}</div>}
-                  </div>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => openForm(c)} style={{ width: 32, height: 32, background: D.craieMid, border: `1px solid ${D.craieDark}`, borderRadius: 8, cursor: 'pointer', fontSize: 14 }}>✏️</button>
-                    <button onClick={() => toggleActif(c.id, c.actif)} style={{ width: 32, height: 32, background: c.actif ? D.vertBg : D.rougeBg, border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 12, color: c.actif ? D.vert : D.rouge, fontWeight: 700 }}>
-                      {c.actif ? '✓' : '✕'}
-                    </button>
-                  </div>
-                </div>
-              </Card>
-            ))}
+            {list.map(renderCard)}
           </div>
         )
       })}
+
+      {autres.length > 0 && (
+        <div>
+          <SectionLabel>❓ Sans type</SectionLabel>
+          {autres.map(renderCard)}
+        </div>
+      )}
     </div>
   )
 }
+
 
 // ═══════════════════════════════════════════════
 // FACTURATION
@@ -1043,81 +1035,6 @@ function DirectionStock({ stock, traiter, showToast, load }: {
           ))}
         </div>
       )}
-    </div>
-  )
-}
-
-// ═══════════════════════════════════════════════
-// CONFIG
-// ═══════════════════════════════════════════════
-function DirectionConfig({ clients, showToast, load }: {
-  clients: any[], showToast: ShowToast, load: () => void
-}) {
-  const [pwdVisible, setPwdVisible] = useState<Record<string, boolean>>({})
-  const [newPwd, setNewPwd]         = useState<Record<string, string>>({})
-  const [pwds, setPwds]             = useState<Record<string, string>>({})
-
-  // Charger les mots de passe (on stocke pas en clair, on permet juste de changer)
-  const changerPwd = async (userId: string) => {
-    const pwd = newPwd[userId]
-    if (!pwd || pwd.length < 4) { showToast('Mot de passe trop court (min 4 caractères)', 'err'); return }
-    const { error } = await supabase.rpc('changer_password', { p_user_id: userId, p_new_password: pwd })
-    if (error) {
-      // Fallback direct
-      await supabase.from('users').update({ password_hash: pwd }).eq('id', userId)
-    }
-    showToast('Mot de passe mis à jour ✓')
-    setNewPwd(prev => ({ ...prev, [userId]: '' }))
-  }
-
-  const ROLE_LABELS_LOCAL: Record<string, string> = {
-    patissier: 'Pâtissier', boulanger_livry: 'Boulanger Livry',
-    boulanger_villemomble: 'Boulanger Villemomble', boutique_livry: 'QG Boutique Livry',
-    boutique_villemomble: "L'Atelier des Saveurs", framboise: 'La Framboise',
-  }
-
-  return (
-    <div style={{ padding: 16 }}>
-      <div style={{ fontSize: 14, fontWeight: 600, color: D.ardoise, marginBottom: 14 }}>Accès utilisateurs</div>
-      {clients.map((c: any) => (
-        <Card key={c.id}>
-          <div style={{ padding: '12px 14px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-              <Avatar nom={c.nom} couleur={c.couleur} size={36} />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: c.couleur }}>{c.nom}</div>
-                <div style={{ fontSize: 11, color: D.gris }}>@{c.login} · {ROLE_LABELS_LOCAL[c.role] || c.role}</div>
-              </div>
-              <div style={{
-                width: 8, height: 8, borderRadius: '50%',
-                background: c.actif ? D.vert : D.rouge,
-              }} />
-            </div>
-            {/* Changer mot de passe */}
-            <div style={{ display: 'flex', gap: 8 }}>
-              <div style={{ position: 'relative', flex: 1 }}>
-                <input
-                  type={pwdVisible[c.id] ? 'text' : 'password'}
-                  value={newPwd[c.id] || ''}
-                  onChange={e => setNewPwd(prev => ({ ...prev, [c.id]: e.target.value }))}
-                  placeholder="Nouveau mot de passe"
-                  style={{ ...inputStyle, marginBottom: 0, paddingRight: 36, fontSize: 12 }}
-                />
-                <button onClick={() => setPwdVisible(prev => ({ ...prev, [c.id]: !prev[c.id] }))} style={{
-                  position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
-                  background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: D.gris,
-                }}>
-                  {pwdVisible[c.id] ? '🙈' : '👁️'}
-                </button>
-              </div>
-              <button onClick={() => changerPwd(c.id)} className="press" style={{
-                padding: '9px 14px', background: D.ardoise, color: 'white',
-                border: 'none', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-              }}>OK</button>
-            </div>
-          </div>
-        </Card>
-      ))}
     </div>
   )
 }
